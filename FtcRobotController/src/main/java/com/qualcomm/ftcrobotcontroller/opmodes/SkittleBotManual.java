@@ -73,8 +73,20 @@ public class SkittleBotManual extends SkittleBotTelemetry
 
             set_drive_power(xDrivePower, xDrivePower, yDrivePower, yDrivePower);
         } else {
-            yDrivePower = scale_motor_power(-gamepad1.left_stick_y);
-            xDrivePower = scale_motor_power(-gamepad1.left_stick_x);
+            float leftStickY = -gamepad1.left_stick_y;
+            float leftStickX = -gamepad1.left_stick_x;
+
+            if (gamepad1.right_trigger > 0) {
+                double fortyFiveDegRad = Math.toRadians(-45.0D);
+                double leftStickXPrime = leftStickX * Math.cos(fortyFiveDegRad) - leftStickY * Math.sin(fortyFiveDegRad);
+                double leftStickYPrime = leftStickX * Math.sin(fortyFiveDegRad) + leftStickY * Math.cos(fortyFiveDegRad);
+
+                leftStickX = (float)leftStickXPrime;
+                leftStickY = (float)leftStickYPrime;
+            }
+
+            yDrivePower = scale_motor_power(leftStickY);
+            xDrivePower = scale_motor_power(leftStickX);
 
             set_drive_power(xDrivePower, -xDrivePower, yDrivePower, -yDrivePower);
         }
