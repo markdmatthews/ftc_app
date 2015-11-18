@@ -2,44 +2,22 @@ package com.qualcomm.ftcrobotcontroller.opmodes;
 
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorController;
-import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
-/**
- * Created by Lauren on 11/1/15.
- */
-public class SkittleBotHardware extends OpMode {
-    //--------------------------------------------------------------------------
-    //
-    // PushBotHardware
-    //
+public abstract class SkittleBotHardware extends OpMode {
 
-    /**
-     * Construct the class.
-     * <p/>
-     * The system calls this member when the class is instantiated.
-     */
-    public SkittleBotHardware()
-
-    {
-        //
-        // Initialize base classes.
-        //
-        // All via self-construction.
-
-        //
-        // Initialize class members.
-        //
-        // All via self-construction.
-
-    } // PushBotHardware
-
-    //--------------------------------------------------------------------------
-    //
-    // init
-    //
+    // Required hardware map
+    // Motor Controller 1 (AL00XQ80)
+    //     Port 1 - y1MotorDrive (encoder is in port 1)
+    //     Port 2 - y2MotorDrive
+    // Motor Controller 2 (AL00XSTZ)
+    //     Port 1 - x1MotorDrive (encoder is in port 1)
+    //     Port 2 - x2MotorDrive
+    // Core Device Interface Module (mapped as "dim" AL00VCWV)
+    //     Port 5 - mr (color sensor)
 
     /**
      * Perform any actions that are necessary when the OpMode is enabled.
@@ -47,9 +25,7 @@ public class SkittleBotHardware extends OpMode {
      * The system calls this member once when the OpMode is enabled.
      */
     @Override
-    public void init()
-
-    {
+    public void init() {
         //
         // Use the hardwareMap to associate class members to hardware ports.
         //
@@ -59,19 +35,31 @@ public class SkittleBotHardware extends OpMode {
         //
         // The variable below is used to provide telemetry data to a class user.
         //
-        v_warning_generated = false;
-        v_warning_message = "Can't map; ";
+        warningGenerated = false;
+        warningMessage = "Can't map; ";
+
+        //
+        // Connect the first color sensor (mapped as "mr")
+        //
+
+        try {
+            sensorRGB = hardwareMap.colorSensor.get("mr");
+
+        } catch (Exception p_exeception) {
+            appendWarningMessage("sensorRGB");
+            DbgLog.msg(p_exeception.getLocalizedMessage());
+
+            sensorRGB = null;
+        }
 
         //
         // Connect the drive wheel motors.
         //
-        // The direction of the right motor is reversed, so joystick inputs can
-        // be more generically applied.
-        //
+
         try {
             y1MotorDrive = hardwareMap.dcMotor.get("y1MotorDrive");
         } catch (Exception p_exeception) {
-            m_warning_message("y1MotorDrive");
+            appendWarningMessage("y1MotorDrive");
             DbgLog.msg(p_exeception.getLocalizedMessage());
 
             y1MotorDrive = null;
@@ -80,7 +68,7 @@ public class SkittleBotHardware extends OpMode {
         try {
             y2MotorDrive = hardwareMap.dcMotor.get("y2MotorDrive");
         } catch (Exception p_exeception) {
-            m_warning_message("y2MotorDrive");
+            appendWarningMessage("y2MotorDrive");
             DbgLog.msg(p_exeception.getLocalizedMessage());
 
             y2MotorDrive = null;
@@ -89,7 +77,7 @@ public class SkittleBotHardware extends OpMode {
         try {
             x1MotorDrive = hardwareMap.dcMotor.get("x1MotorDrive");
         } catch (Exception p_exeception) {
-            m_warning_message("x1MotorDrive");
+            appendWarningMessage("x1MotorDrive");
             DbgLog.msg(p_exeception.getLocalizedMessage());
 
             x1MotorDrive = null;
@@ -98,47 +86,28 @@ public class SkittleBotHardware extends OpMode {
         try {
             x2MotorDrive = hardwareMap.dcMotor.get("x2MotorDrive");
         } catch (Exception p_exeception) {
-            m_warning_message("x2MotorDrive");
+            appendWarningMessage("x2MotorDrive");
             DbgLog.msg(p_exeception.getLocalizedMessage());
 
             x2MotorDrive = null;
         }
-    } // init
-
-    //--------------------------------------------------------------------------
-    //
-    // a_warning_generated
-    //
+    }
 
     /**
      * Access whether a warning has been generated.
      */
-    boolean a_warning_generated()
-
-    {
-        return v_warning_generated;
-
-    } // a_warning_generated
-
-    //--------------------------------------------------------------------------
-    //
-    // a_warning_message
-    //
+    boolean wasWarningGenerated() {
+        return warningGenerated;
+    }
 
     /**
      * Access the warning message.
      */
-    String a_warning_message()
+    String getWarningMessage()
 
     {
-        return v_warning_message;
-
-    } // a_warning_message
-
-    //--------------------------------------------------------------------------
-    //
-    // m_warning_message
-    //
+        return warningMessage;
+    }
 
     /**
      * Mutate the warning message by ADDING the specified message to the current
@@ -147,101 +116,25 @@ public class SkittleBotHardware extends OpMode {
      * A comma will be added before the specified message if the message isn't
      * empty.
      */
-    void m_warning_message(String p_exception_message)
-
-    {
-        if (v_warning_generated) {
-            v_warning_message += ", ";
+    void appendWarningMessage(String exceptionMessage) {
+        if (warningGenerated) {
+            warningMessage += ", ";
         }
-        v_warning_generated = true;
-        v_warning_message += p_exception_message;
-
-    } // m_warning_message
-
-    //--------------------------------------------------------------------------
-    //
-    // start
-    //
-
-    /**
-     * Perform any actions that are necessary when the OpMode is enabled.
-     * <p/>
-     * The system calls this member once when the OpMode is enabled.
-     */
-    @Override
-    public void start()
-
-    {
-        //
-        // Only actions that are common to all Op-Modes (i.e. both automatic and
-        // manual) should be implemented here.
-        //
-        // This method is designed to be overridden.
-        //
-
-    } // start
-
-    //--------------------------------------------------------------------------
-    //
-    // loop
-    //
-
-    /**
-     * Perform any actions that are necessary while the OpMode is running.
-     * <p/>
-     * The system calls this member repeatedly while the OpMode is running.
-     */
-    @Override
-    public void loop()
-
-    {
-        //
-        // Only actions that are common to all OpModes (i.e. both auto and\
-        // manual) should be implemented here.
-        //
-        // This method is designed to be overridden.
-        //
-
-    } // loop
-
-    //--------------------------------------------------------------------------
-    //
-    // stop
-    //
-
-    /**
-     * Perform any actions that are necessary when the OpMode is disabled.
-     * <p/>
-     * The system calls this member once when the OpMode is disabled.
-     */
-    @Override
-    public void stop() {
-        //
-        // Nothing needs to be done for this method.
-        //
-
-    } // stop
-
-    //--------------------------------------------------------------------------
-    //
-    // scale_motor_power
-    //
+        warningGenerated = true;
+        warningMessage += exceptionMessage;
+    }
 
     /**
      * Scale the joystick input using a nonlinear algorithm.
      */
-    float scale_motor_power(float p_power) {
-        //
-        // Assume no scaling.
-        //
-        float l_scale = 0.0f;
+    float scaleMotorPower(float unscaledPower) {
 
         //
         // Ensure the values are legal.
         //
-        float l_power = Range.clip(p_power, -1, 1);
+        float clippedPower = Range.clip(unscaledPower, -1, 1);
 
-        float[] l_array =
+        float[] scaleFactors =
                 {0.00f, 0.05f, 0.09f, 0.10f, 0.12f
                         , 0.15f, 0.18f, 0.24f, 0.30f, 0.36f
                         , 0.43f, 0.50f, 0.60f, 0.72f, 0.85f
@@ -249,26 +142,28 @@ public class SkittleBotHardware extends OpMode {
                 };
 
         //
-        // Get the corresponding index for the specified argument/parameter.
+        // Get the corresponding index for the given unscaled power.
         //
-        int l_index = (int) (l_power * 16.0);
-        if (l_index < 0) {
-            l_index = -l_index;
-        } else if (l_index > 16) {
-            l_index = 16;
+        int scaleIndex = (int) (clippedPower * 16.0);
+
+        if (scaleIndex < 0) {
+            scaleIndex = -scaleIndex;
+        } else if (scaleIndex > 16) {
+            scaleIndex = 16;
         }
 
-        if (l_power < 0) {
-            l_scale = -l_array[l_index];
+        final float scaledPower;
+
+        if (clippedPower < 0) {
+            scaledPower = -scaleFactors[scaleIndex];
         } else {
-            l_scale = l_array[l_index];
+            scaledPower = scaleFactors[scaleIndex];
         }
 
-        return l_scale;
+        return scaledPower;
+    }
 
-    } // scale_motor_power
-
-    double accessY1MotorDrivePower() {
+    double getY1MotorDrivePower() {
 
         if (y1MotorDrive != null) {
             return y1MotorDrive.getPower();
@@ -277,7 +172,7 @@ public class SkittleBotHardware extends OpMode {
         return 0.0;
     }
 
-    double accessY2MotorDrivePower() {
+    double getY2MotorDrivePower() {
 
         if (y2MotorDrive != null) {
             return y2MotorDrive.getPower();
@@ -286,7 +181,7 @@ public class SkittleBotHardware extends OpMode {
         return 0.0;
     }
 
-    double accessX1MotorDrivePower() {
+    double getX1MotorDrivePower() {
 
         if (x1MotorDrive != null) {
             return x1MotorDrive.getPower();
@@ -295,7 +190,7 @@ public class SkittleBotHardware extends OpMode {
         return 0.0;
     }
 
-    double accessX2MotorDrivePower() {
+    double getX2MotorDrivePower() {
 
         if (x2MotorDrive != null) {
             return x2MotorDrive.getPower();
@@ -304,286 +199,115 @@ public class SkittleBotHardware extends OpMode {
         return 0.0;
     }
 
-    //--------------------------------------------------------------------------
-    //
-    // set_drive_power
-    //
+    void driveAlongYAxis(double power) {
+        setDrivePower(0, 0, power, -power);
+    }
 
-    /**
-     * Scale the joystick input using a nonlinear algorithm.
-     */
-    void set_drive_power(double x1DrivePower, double x2DrivePower,
-                         double y1DrivePower, double y2DrivePower)
+    void driveAlongXAxis(double power) {
+        setDrivePower(power, -power, 0, 0);
+    }
 
-    {
+    void setDrivePower(double x1DrivePower, double x2DrivePower,
+                       double y1DrivePower, double y2DrivePower) {
         if (y1MotorDrive != null) {
-            if (y1DrivePower < 0) {
-                y1MotorDrive.setDirection(DcMotor.Direction.REVERSE);
-            }
-
             y1MotorDrive.setPower(y1DrivePower);
         }
         if (y2MotorDrive != null) {
-            if (y2DrivePower < 0) {
-                y2MotorDrive.setDirection(DcMotor.Direction.REVERSE);
-            }
-
             y2MotorDrive.setPower(y2DrivePower);
         }
 
         if (x1MotorDrive != null) {
-            if (x1DrivePower < 0) {
-                x1MotorDrive.setDirection(DcMotor.Direction.REVERSE);
-            }
-
             x1MotorDrive.setPower(x1DrivePower);
         }
 
         if (x2MotorDrive != null) {
-            if (x2DrivePower < 0) {
-                x2MotorDrive.setDirection(DcMotor.Direction.REVERSE);
-            }
-
             x2MotorDrive.setPower(x2DrivePower);
         }
+    }
 
-    } // set_drive_power
-
-
-    //--------------------------------------------------------------------------
-    //
-    // run_using_encoders
-    //
-
-    /**
-     * Set both drive wheel encoders to run, if the mode is appropriate.
-     */
-    public void run_using_encoders()
-
-    {
+    public void runUsingEncoders() {
         DcMotor[] allDriveMotors = new DcMotor[] { x1MotorDrive, x2MotorDrive,
                 y1MotorDrive, y2MotorDrive};
 
         for (DcMotor aMotor : allDriveMotors) {
             if (aMotor != null) {
-                aMotor.setChannelMode
+                aMotor.setMode
                         (DcMotorController.RunMode.RUN_USING_ENCODERS
                         );
             }
         }
-
     }
 
-    /**
-     * Set both drive wheel encoders to run, if the mode is appropriate.
-     */
-    public void run_without_drive_encoders()
-
-    {
+    public void runWithoutDriveEncoders() {
         DcMotor[] allDriveMotors = new DcMotor[] { x1MotorDrive, x2MotorDrive,
                 y1MotorDrive, y2MotorDrive};
 
         for (DcMotor aMotor : allDriveMotors) {
             if (aMotor != null) {
-                aMotor.setChannelMode
+                aMotor.setMode
                         (DcMotorController.RunMode.RUN_WITHOUT_ENCODERS
                         );
             }
         }
     }
 
-    public void resetYDriveEncoder()
-
-    {
+    public void resetYDriveEncoder() {
         if (y1MotorDrive != null) {
-            y1MotorDrive.setChannelMode
+            y1MotorDrive.setMode
                     (DcMotorController.RunMode.RESET_ENCODERS
                     );
         }
 
     }
 
-    public void resetXDriveEncoder()
-
-    {
+    public void resetXDriveEncoder() {
         if (x1MotorDrive != null) {
-            x1MotorDrive.setChannelMode
+            x1MotorDrive.setMode
                     (DcMotorController.RunMode.RESET_ENCODERS
                     );
         }
 
-    } // reset_right_drive_encoder
-
-    //--------------------------------------------------------------------------
-    //
-    // reset_drive_encoders
-    //
+    }
 
     /**
      * Reset both drive wheel encoders.
      */
-    public void reset_drive_encoders()
-
-    {
+    public void resetDriveEncoders() {
         //
         // Reset the motor encoders on the drive wheels.
         //
         resetXDriveEncoder();
         resetYDriveEncoder();
-
     }
 
-//    //--------------------------------------------------------------------------
-//    //
-//    // a_left_encoder_count
-//    //
-//
-//    /**
-//     * Access the left encoder's count.
-//     */
-//    int a_left_encoder_count() {
-//        int l_return = 0;
-//
-//        if (v_motor_left_drive != null) {
-//            l_return = v_motor_left_drive.getCurrentPosition();
-//        }
-//
-//        return l_return;
-//
-//    } // a_left_encoder_count
-//
-//    //--------------------------------------------------------------------------
-//    //
-//    // a_right_encoder_count
-//    //
-//
-//    /**
-//     * Access the right encoder's count.
-//     */
-//    int a_right_encoder_count()
-//
-//    {
-//        int l_return = 0;
-//
-//        if (v_motor_right_drive != null) {
-//            l_return = v_motor_right_drive.getCurrentPosition();
-//        }
-//
-//        return l_return;
-//
-//    } // a_right_encoder_count
-//
-//    //--------------------------------------------------------------------------
-//    //
-//    // has_left_drive_encoder_reached
-//    //
-//
-//    /**
-//     * Indicate whether the left drive motor's encoder has reached a value.
-//     */
-//    boolean has_left_drive_encoder_reached(double p_count)
-//
-//    {
-//        //
-//        // Assume failure.
-//        //
-//        boolean l_return = false;
-//
-//        if (v_motor_left_drive != null) {
-//            //
-//            // Has the encoder reached the specified values?
-//            //
-//            // TODO Implement stall code using these variables.
-//            //
-//            if (Math.abs(v_motor_left_drive.getCurrentPosition()) > p_count) {
-//                //
-//                // Set the status to a positive indication.
-//                //
-//                l_return = true;
-//            }
-//        }
-//
-//        //
-//        // Return the status.
-//        //
-//        return l_return;
-//
-//    } // has_left_drive_encoder_reached
-//
-//    //--------------------------------------------------------------------------
-//    //
-//    // has_right_drive_encoder_reached
-//    //
-//
-//    /**
-//     * Indicate whether the right drive motor's encoder has reached a value.
-//     */
-//    boolean has_right_drive_encoder_reached(double p_count)
-//
-//    {
-//        //
-//        // Assume failure.
-//        //
-//        boolean l_return = false;
-//
-//        if (v_motor_right_drive != null) {
-//            //
-//            // Have the encoders reached the specified values?
-//            //
-//            // TODO Implement stall code using these variables.
-//            //
-//            if (Math.abs(v_motor_right_drive.getCurrentPosition()) > p_count) {
-//                //
-//                // Set the status to a positive indication.
-//                //
-//                l_return = true;
-//            }
-//        }
-//
-//        //
-//        // Return the status.
-//        //
-//        return l_return;
-//
-//    } // has_right_drive_encoder_reached
-//
-//    //--------------------------------------------------------------------------
-//    //
-//    // have_drive_encoders_reached
-//    //
-//
-//    /**
-//     * Indicate whether the drive motors' encoders have reached a value.
-//     */
-//    boolean have_drive_encoders_reached
-//    (double p_left_count
-//            , double p_right_count
-//    )
-//
-//    {
-//        //
-//        // Assume failure.
-//        //
-//        boolean l_return = false;
-//
-//        //
-//        // Have the encoders reached the specified values?
-//        //
-//        if (has_left_drive_encoder_reached(p_left_count) &&
-//                has_right_drive_encoder_reached(p_right_count)) {
-//            //
-//            // Set the status to a positive indication.
-//            //
-//            l_return = true;
-//        }
-//
-//        //
-//        // Return the status.
-//        //
-//        return l_return;
-//
-//    } // have_encoders_reached
-//
+
+    int getYAxisEncoderCount() {
+        return getAxisEncoderCount(y1MotorDrive);
+    }
+
+    int getXAxisEncoderCount() {
+        return getAxisEncoderCount(x1MotorDrive);
+    }
+
+    private int getAxisEncoderCount(DcMotor forMotor) {
+        int encoderCount = 0;
+
+        if (forMotor != null) {
+            encoderCount = forMotor.getCurrentPosition();
+        }
+
+        return encoderCount;
+    }
+
+    boolean hasYAxisEncoderReached(double count) {
+        return Math.abs(getYAxisEncoderCount()) > count;
+    }
+
+    boolean hasXAxisEncoderReached(double count) {
+        return Math.abs(getXAxisEncoderCount()) > count;
+    }
+
+
 //    //--------------------------------------------------------------------------
 //    //
 //    // drive_using_encoders
@@ -613,7 +337,7 @@ public class SkittleBotHardware extends OpMode {
 //        //
 //        // Start the drive wheel motors at full power.
 //        //
-//        set_drive_power(p_left_power, p_right_power);
+//        setDrivePower(p_left_power, p_right_power);
 //
 //        //
 //        // Have the motor shafts turned the required amount?
@@ -625,12 +349,12 @@ public class SkittleBotHardware extends OpMode {
 //            //
 //            // Reset the encoders to ensure they are at a known good value.
 //            //
-//            reset_drive_encoders();
+//            resetDriveEncoders();
 //
 //            //
 //            // Stop the motors.
 //            //
-//            set_drive_power(0.0f, 0.0f);
+//            setDrivePower(0.0f, 0.0f);
 //
 //            //
 //            // Transition to the next state when this method is called
@@ -739,23 +463,63 @@ public class SkittleBotHardware extends OpMode {
 //
 //    } // have_drive_encoders_reset
 
-    //--------------------------------------------------------------------------
-    //
-    // v_warning_generated
-    //
+    private boolean colorSensorLedEnabled = false;
+
+    protected void enableColorSensorLed(boolean on) {
+        if (sensorRGB != null) {
+            colorSensorLedEnabled = on;
+            sensorRGB.enableLed(on);
+        }
+    }
+
+    protected boolean getColorSensorLedEnabled() {
+        return colorSensorLedEnabled;
+    }
+
+    protected ColorSensorValues getColorSensorValues() {
+        if (sensorRGB != null) {
+            return new ColorSensorValues(sensorRGB);
+        } else {
+            return new ColorSensorValues();
+        }
+    }
+
+    public static class ColorSensorValues {
+        public final int red;
+        public final int blue;
+        public final int green;
+        public final int alpha;
+
+        ColorSensorValues(ColorSensor sensor) {
+            red = sensor.red();
+            blue = sensor.blue();
+            green = sensor.green();
+            alpha = sensor.alpha();
+
+        }
+
+        ColorSensorValues() {
+            red = 0;
+            blue = 0;
+            green = 0;
+            alpha = 0;
+        }
+
+        @Override
+        public String toString() {
+            return "(RGBA) " + red + ", " + green + ", " + blue + ", " + alpha;
+        }
+    }
+
     /**
      * Indicate whether a message is a available to the class user.
      */
-    private boolean v_warning_generated = false;
+    private boolean warningGenerated = false;
 
-    //--------------------------------------------------------------------------
-    //
-    // v_warning_message
-    //
     /**
      * Store a message to the user if one has been generated.
      */
-    private String v_warning_message;
+    private String warningMessage;
 
     private DcMotor y1MotorDrive;
 
@@ -764,4 +528,6 @@ public class SkittleBotHardware extends OpMode {
     private DcMotor x1MotorDrive;
 
     private DcMotor x2MotorDrive;
+
+    protected ColorSensor sensorRGB;
 }

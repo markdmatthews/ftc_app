@@ -69,9 +69,9 @@ public class SkittleBotManual extends SkittleBotTelemetry
         final float xDrivePower;
 
         if (Math.abs(spinControl) > 0) {
-            yDrivePower = xDrivePower = scale_motor_power(spinControl);
+            yDrivePower = xDrivePower = scaleMotorPower(spinControl);
 
-            set_drive_power(xDrivePower, xDrivePower, yDrivePower, yDrivePower);
+            setDrivePower(xDrivePower, xDrivePower, yDrivePower, yDrivePower);
         } else {
             float leftStickY = -gamepad1.left_stick_y;
             float leftStickX = -gamepad1.left_stick_x;
@@ -85,19 +85,21 @@ public class SkittleBotManual extends SkittleBotTelemetry
                 leftStickY = (float)leftStickYPrime;
             }
 
-            yDrivePower = scale_motor_power(leftStickY);
-            xDrivePower = scale_motor_power(leftStickX);
+            yDrivePower = scaleMotorPower(leftStickY);
+            xDrivePower = scaleMotorPower(leftStickX);
 
-            set_drive_power(xDrivePower, -xDrivePower, yDrivePower, -yDrivePower);
+            setDrivePower(xDrivePower, -xDrivePower, yDrivePower, -yDrivePower);
         }
 
-
+        if (gamepad1.left_trigger > 0) {
+            resetDriveEncoders();
+        }
 
         //
         // Send telemetry data to the driver station.
         //
-        update_telemetry (); // Update common telemetry
-        update_gamepad_telemetry ();
+        updateTelemetry(); // Update common telemetry
+        updateGamepadTelemetry();
 
     } // loop
 
