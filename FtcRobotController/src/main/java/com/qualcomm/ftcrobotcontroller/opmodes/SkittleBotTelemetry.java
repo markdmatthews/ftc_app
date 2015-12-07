@@ -2,12 +2,14 @@ package com.qualcomm.ftcrobotcontroller.opmodes;
 
 public abstract class SkittleBotTelemetry extends SkittleBotHardware {
 
+    protected void updatePriorityTelemetry(String message) {
+        telemetry.addData("00", message);
+    }
+
     /**
      * Update the telemetry with current values from the hardware.
      */
-    public void updateTelemetry()
-
-    {
+    public void updateTelemetry() {
         if (wasWarningGenerated()) {
             setFirstMessage(getWarningMessage());
         }
@@ -16,21 +18,21 @@ public abstract class SkittleBotTelemetry extends SkittleBotHardware {
         // Send telemetry data to the driver station.
         //
         telemetry.addData
-                ( "01"
+                ( "02"
                         , "Y Axis: (P) "
                                 + getY1MotorDrivePower()
                                 + ", (E) "
                                 + getYAxisEncoderCount()
                 );
         telemetry.addData
-                ( "02"
+                ( "03"
                         , "X Axis: (P) "
                                 + getX1MotorDrivePower()
                                 + ", (E)"
                                 + getXAxisEncoderCount()
                 );
         ColorSensorValues rgbValues = getColorSensorValues();
-        telemetry.addData("03", "Color Sensor: " + rgbValues.toString());
+        telemetry.addData("04", "Color Sensor: " + rgbValues.toString());
     }
 
     public void updateGamepadTelemetry() {

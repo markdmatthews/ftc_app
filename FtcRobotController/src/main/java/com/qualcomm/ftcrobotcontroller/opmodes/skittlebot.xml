@@ -11,4 +11,9 @@
     <DeviceInterfaceModule name="dim" serialNumber="AL00VCWV">
         <ColorSensor name="mr" port="5" />
     </DeviceInterfaceModule>
+    <ServoController name="Servo Controller 1" serialNumber="AI02QU05">
+        <Servo name="climberDumpServo" port="1" />
+        <Servo name="leftZiplineTriggerServo" port="2" />
+        <Servo name="rightZiplineTriggerServo" port="3" />
+    </ServoController>
 </Robot>

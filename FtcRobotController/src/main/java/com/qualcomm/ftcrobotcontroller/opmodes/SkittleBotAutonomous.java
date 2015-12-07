@@ -27,6 +27,12 @@ public class SkittleBotAutonomous extends SkittleBotTelemetry
 
     }
 
+    @Override
+    public void init() {
+        super.init();
+        runWithoutDriveEncoders();
+    }
+
     //--------------------------------------------------------------------------
     //
     // loop
