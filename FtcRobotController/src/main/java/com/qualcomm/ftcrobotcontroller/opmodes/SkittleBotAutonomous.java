@@ -1,30 +1,39 @@
 package com.qualcomm.ftcrobotcontroller.opmodes;
 
 
-/**
- *
- */
-public class SkittleBotAutonomous extends SkittleBotTelemetry
-
+abstract class SkittleBotAutonomous extends SkittleBotTelemetry
 {
-    private enum RobotState { START, DRIVE_TO_BLUE_MIDDLE, MOVE_DOWN_LINE_NORTHEAST,
-        DRIVE_TO_RESCUE_BLUE, WHITE_LINE_FIND, GO_TO_BEACON, DUMP_THE_CLIMBERS, DONE}
+    private RobotState currentRobotState;
 
-    private RobotState currentRobotState = RobotState.START;
+    public SkittleBotAutonomous(boolean blueAlliance) {
+        // FIXME: These values aren't right
+        ColorMatch matchBlue = new ColorMatch().blueMin(0).greenMin(0).redMin(0);
+        ColorMatch matchRed = new ColorMatch().blueMin(0).greenMin(0).redMin(0);
 
-    public SkittleBotAutonomous()
+        final ColorMatch matchMiddleAndRescue;
 
-    {
-        //
-        // Initialize base classes.
-        //
-        // All via self-construction.
+        if (blueAlliance) {
+            matchMiddleAndRescue = matchBlue;
+        } else {
+            matchMiddleAndRescue = matchRed;
+        }
 
-        //
-        // Initialize class members.
-        //
-        // All via self-construction.
+        RobotState doneState = new DoneState(); // what the robot does when done (i.e nothing)
 
+        RobotState startState = new StartState();
+        RobotState driveToMiddleLine = new DriveAlongXAxisUntilColor("Drive to middle", .1, matchMiddleAndRescue);
+        startState.setNextState(driveToMiddleLine);
+        RobotState driveOffMiddleLine = new DriveAlongYAxisTimed("Drive off middle", .1, 500);
+        driveToMiddleLine.setNextState(driveOffMiddleLine);
+        RobotState driveUntilRescueRepairZone = new DriveAlongYAxisUntilColor("Drive to ResQ", .1, matchMiddleAndRescue);
+        driveOffMiddleLine.setNextState(driveUntilRescueRepairZone);
+        RobotState driveIntoRescueRepairABit = new DriveAlongYAxisTimed("Drive into ResQ", .05, 250);
+        driveUntilRescueRepairZone.setNextState(driveIntoRescueRepairABit);
+        RobotState seekWhiteLine = new SeekWhiteLine("Find White Line");
+        driveIntoRescueRepairABit.setNextState(seekWhiteLine);
+        seekWhiteLine.setNextState(doneState);
+        // Robot starts the state machine at the start state
+        currentRobotState = startState;
     }
 
     @Override
@@ -33,159 +42,329 @@ public class SkittleBotAutonomous extends SkittleBotTelemetry
         runWithoutDriveEncoders();
     }
 
-    //--------------------------------------------------------------------------
-    //
-    // loop
-    //
     /**
-     * Implement a state machine that controls the robot during
-     * autonomous operation.  T
+     * Implements a state machine that controls the robot during
+     * autonomous operation.
      *
      * The system calls this member repeatedly while the OpMode is running.
      */
-    private int ledToggleCount = 0;
-
-    @Override public void loop ()
-
-    {
-        // There seems to be some race/flakiness with the LED
-        // on the color sensor, toggling it multiple times
-        // seems to make it work more reliably...
-        if (ledToggleCount < 100) {
-            ledToggleCount++;
-            if (ledToggleCount %2 == 0) {
-                sensorRGB.enableLed(false);
-                return;
-            } else {
-                sensorRGB.enableLed(true);
-                return;
-            }
-        } else if (ledToggleCount < 125) {
-            ledToggleCount++;
-            sensorRGB.enableLed(true);
-            return;
-        }
-
-        switch (currentRobotState) {
-            case START:
-                // do something
-                currentRobotState = robotStart();
-                break;
-            case DRIVE_TO_BLUE_MIDDLE:
-                currentRobotState = driveToBlueMiddle();
-                break;
-            case MOVE_DOWN_LINE_NORTHEAST:
-                currentRobotState = moveDownLineNortheast();
-                break;
-            case DRIVE_TO_RESCUE_BLUE:
-                currentRobotState = driveToRescueBlue();
-                break;
-            case WHITE_LINE_FIND:
-                currentRobotState = whiteLineFind();
-                break;
-            case GO_TO_BEACON:
-                currentRobotState = goToBeacon();
-                break;
-            case DUMP_THE_CLIMBERS:
-                currentRobotState = dumpTheClimbers();
-                break;
-            case DONE:
-                done();
-                break;
-        }
-
+    @Override
+    public void loop() {
+        RobotState previousState = currentRobotState;
+        currentRobotState = currentRobotState.doStuffAndGetNextState();
+        // send the previous and current state names/date to the driver's station
+        setFirstMessage("prev: " + previousState + " cur: " + currentRobotState);
         updateTelemetry();
     }
 
-    private void done() {
-    //shut down robot; it should be safed
-    }
+    /**
+     * All robot "states" have this code to run
+     */
+    abstract class RobotState {
+        protected RobotState nextState;
+        protected String stateName;
 
-    private RobotState dumpTheClimbers() {
-        if (areClimbersDumped()) {
-            return RobotState.DONE;
-        } else {
-            return RobotState.DUMP_THE_CLIMBERS;
+        RobotState(String stateName) {
+            this.stateName = stateName;
+        }
+
+        void setNextState(RobotState nextState) {
+            this.nextState = nextState;
+        }
+
+        /**
+         * Define what this state does, and what the next
+         * state when the state is finished...
+         */
+        abstract RobotState doStuffAndGetNextState();
+
+        @Override
+        public String toString() {
+            return stateName;
         }
     }
 
-    private boolean areClimbersDumped() {
-        return false;
-    }
+    class DoneState extends RobotState {
+        DoneState() {
+            super("Done");
+        }
 
-    private RobotState goToBeacon() {
-        if (robotAtBeacon()) {
-            return RobotState.DUMP_THE_CLIMBERS;
-        } else {
-            return RobotState.GO_TO_BEACON;
+        RobotState doStuffAndGetNextState() {
+            return this;
         }
     }
 
-    private boolean robotAtBeacon() {
-        return false;
-    }
+    class StartState extends RobotState {
+        int colorSensorLedToggleCount = 0;
 
-    private RobotState whiteLineFind() {
-        if (foundWhiteLine()) {
-            return RobotState.GO_TO_BEACON;
-        } else {
-            return RobotState.WHITE_LINE_FIND;
+        StartState() {
+            super("Start");
         }
-    }
 
-    private boolean foundWhiteLine() { 
-        return false;
-    }
-
-    private RobotState robotStart() {
-        // setup the robot
-        return RobotState.DRIVE_TO_BLUE_MIDDLE;
-    }
-
-    boolean blueMiddleDrivePowerSet = false;
-
-    private RobotState driveToBlueMiddle() {
-        if (foundBlueLine()) {
-            return RobotState.MOVE_DOWN_LINE_NORTHEAST;
-        } else {
-            if (!blueMiddleDrivePowerSet) {
-                double motorPower = .07;
-                driveAlongYAxis(motorPower);
-                blueMiddleDrivePowerSet = true;
+        RobotState doStuffAndGetNextState() {
+            // There seems to be some race/flakiness with the LED
+            // on the color sensor, toggling it multiple times
+            // seems to make it work more reliably...
+            if (colorSensorLedToggleCount < 100) {
+                colorSensorLedToggleCount++;
+                if (colorSensorLedToggleCount % 2 == 0) {
+                    sensorRGB.enableLed(false);
+                    return this;
+                } else {
+                    sensorRGB.enableLed(true);
+                    return this;
+                }
+            } else if (colorSensorLedToggleCount < 125) {
+                colorSensorLedToggleCount++;
+                sensorRGB.enableLed(true);
+                return this;
             }
 
-            return RobotState.DRIVE_TO_BLUE_MIDDLE;
+            return nextState;
         }
     }
 
-    private RobotState moveDownLineNortheast() {
-        if (movedDistanceInches(36)) {
-            return RobotState.DRIVE_TO_RESCUE_BLUE;
-        } else {
-            return RobotState.MOVE_DOWN_LINE_NORTHEAST;
+    class ColorMatch {
+        private int redMin;
+        private int redMax = Integer.MAX_VALUE;
+        private int greenMin;
+        private int greenMax = Integer.MAX_VALUE;
+        private int blueMin;
+        private int blueMax = Integer.MAX_VALUE;
+        private int alphaMin;
+        private int alphaMax = Integer.MAX_VALUE;
+
+        ColorMatch redMin(int redMin) {
+            this.redMin = redMin;
+
+            return this;
+        }
+
+        ColorMatch redMax(int redMax) {
+            this.redMax = redMax;
+
+            return this;
+        }
+
+        ColorMatch greenMin(int greenMin) {
+            this.greenMin = greenMin;
+
+            return this;
+        }
+
+        ColorMatch greenMax(int greenMax) {
+            this.greenMax = greenMax;
+
+            return this;
+        }
+
+        ColorMatch blueMin(int blueMin) {
+            this.blueMin = blueMin;
+
+            return this;
+        }
+
+        ColorMatch blueMax(int blueMax) {
+            this.blueMax = blueMax;
+
+            return this;
+        }
+
+        ColorMatch alphaMin(int alphaMin) {
+            this.alphaMin = alphaMin;
+
+            return this;
+        }
+
+        ColorMatch alphaMax(int alphaMax) {
+            this.alphaMax = alphaMax;
+
+            return this;
+        }
+
+        boolean colorMatches(ColorSensorValues colorReading) {
+            boolean match = false;
+
+            if ((colorReading.red >= redMin && colorReading.red <= redMax)
+                    && (colorReading.green >= greenMin && colorReading.green <= greenMax)
+                    && (colorReading.blue >= blueMin && colorReading.blue <= blueMax)
+                    && (colorReading.alpha >= alphaMin && colorReading.alpha <= alphaMax)) {
+                match = true;
+            }
+
+            return match;
         }
     }
 
-    private RobotState driveToRescueBlue() {
-        if (foundBlueLine()) {
-            return RobotState.WHITE_LINE_FIND;
-        } else {
-            return RobotState.DRIVE_TO_RESCUE_BLUE;
+    abstract class ColorSensingState extends RobotState {
+        private final ColorMatch colorMatch;
+        private ColorSensorValues lastColorReading;
+
+        ColorSensingState(String stateName, ColorMatch colorMatch) {
+            super(stateName);
+            this.colorMatch = colorMatch;
+        }
+
+        protected boolean colorMatches() {
+            ColorSensorValues colorReading = getColorSensorValues();
+            lastColorReading = colorReading;
+
+            return colorMatch.colorMatches(colorReading);
+        }
+
+        @Override
+        public String toString() {
+            if (lastColorReading != null) {
+                return stateName + " cr: " + lastColorReading;
+            }
+
+            return stateName;
         }
     }
 
-    private boolean movedDistanceInches(int distanceInInches) {
-        return false;
+    class DriveAlongXAxisUntilColor extends ColorSensingState {
+        private final double motorPower;
+
+        DriveAlongXAxisUntilColor(String stateName, double motorPower, ColorMatch colorMatch) {
+            super(stateName, colorMatch);
+            this.motorPower = motorPower;
+        }
+
+        RobotState doStuffAndGetNextState() {
+            if (!colorMatches()) {
+                driveAlongXAxis(motorPower);
+
+                return this; // keep doing what we were doing
+            } else {
+                stopAllDriveMotors();
+                return nextState;
+            }
+        }
     }
 
+    class DriveAlongYAxisUntilColor extends ColorSensingState {
+        private final double motorPower;
 
-    private boolean foundBlueLine() {
-        ColorSensorValues colorReading = getColorSensorValues();
-
-        if (colorReading.blue > 6 && colorReading.red < 7 && colorReading.green < 7 ) {
-            return true;
+        DriveAlongYAxisUntilColor(String stateName, double motorPower, ColorMatch colorMatch) {
+            super(stateName, colorMatch);
+            this.motorPower = motorPower;
         }
-        return false;
+
+        RobotState doStuffAndGetNextState() {
+            if (!colorMatches()) {
+                driveAlongYAxis(motorPower);
+
+                return this; // keep doing what we were doing
+            } else {
+                stopAllDriveMotors();
+                return nextState;
+            }
+        }
+    }
+
+    abstract class TimedDrive extends RobotState {
+        private final long stopAfterMs;
+        private long beginTimeMs = 0;
+        private long lastElapsedTime = 0;
+
+        public TimedDrive(String stateName, long stopAfterMs) {
+            super(stateName);
+            this.stopAfterMs = stopAfterMs;
+        }
+
+        RobotState doStuffAndGetNextState() {
+            if (beginTimeMs == 0) {
+                beginTimeMs = System.currentTimeMillis();
+            } else {
+                long now = System.currentTimeMillis();
+                long elapsedTime = now - beginTimeMs;
+                lastElapsedTime = elapsedTime;
+
+                if (elapsedTime >= stopAfterMs) {
+                    stopAllDriveMotors();
+
+                    return nextState;
+                }
+            }
+
+            doTheDriving();
+
+            return this;
+        }
+
+        abstract void doTheDriving();
+
+        @Override
+        public String toString() {
+            return stateName + " for: " + stopAfterMs + ", elapsed: " + lastElapsedTime;
+        }
+    }
+
+    class DriveAlongYAxisTimed extends TimedDrive {
+        private double motorPower;
+
+        public DriveAlongYAxisTimed(String stateName, double motorPower, long stopAfterMs) {
+            super(stateName, stopAfterMs);
+            this.motorPower = motorPower;
+        }
+
+        @Override
+        void doTheDriving() {
+            driveAlongYAxis(motorPower);
+        }
+    }
+
+    class DriveAlongXAxisTimed extends TimedDrive {
+        private double motorPower;
+
+        public DriveAlongXAxisTimed(String stateName, double motorPower, long stopAfterMs) {
+            super(stateName, stopAfterMs);
+            this.motorPower = motorPower;
+        }
+
+        @Override
+        void doTheDriving() {
+            driveAlongXAxis(motorPower);
+        }
+    }
+
+    class SeekWhiteLine extends RobotState {
+
+        long beginTime = 0;
+        long reverseDirectionTimeMs = 3000;
+        int seekDirectionMultiplier = 1;
+
+        ColorMatch whiteLine = new ColorMatch().alphaMax(0).alphaMax(5); /* FIXME: Not Right Values */
+
+        public SeekWhiteLine(String stateName) {
+            super(stateName);
+        }
+
+        @Override
+        RobotState doStuffAndGetNextState() {
+            if (beginTime == 0) {
+                beginTime = System.currentTimeMillis();
+            } else {
+                long now = System.currentTimeMillis();
+                long elapsedTime = now - beginTime;
+
+                if (elapsedTime >= reverseDirectionTimeMs) {
+                    seekDirectionMultiplier = -seekDirectionMultiplier;
+                }
+            }
+
+            ColorSensorValues colorReading = getColorSensorValues();
+
+            if (whiteLine.colorMatches(colorReading)) {
+                stopAllDriveMotors();
+                return nextState;
+            }
+
+            double drivePower = .05 * seekDirectionMultiplier;
+            driveAlongXAxis(drivePower);
+
+            return this;
+        }
     }
 }
 

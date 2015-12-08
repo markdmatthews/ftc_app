@@ -64,11 +64,13 @@ public class FtcOpModeRegister implements OpModeRegister {
     //manager.register ("PushBotManual", PushBotManual.class);
 
     manager.register("SkittleBotManual", SkittleBotManual.class);
-    manager.register("SkittleBotAutonomous", SkittleBotAutonomous.class);
+    manager.register("SkittleBotAutoBlue", SkittleBotAutonomousBlue.class);
+    manager.register("SkittleBotAutoRed", SkittleBotAutonomousRed.class);
+
     /*
      * Uncomment any of the following lines if you want to register an op mode.
      */
-    manager.register("MR Gyro Test", MRGyroTest.class);
+    //manager.register("MR Gyro Test", MRGyroTest.class);
 
     //manager.register("AdafruitRGBExample", AdafruitRGBExample.class);
 

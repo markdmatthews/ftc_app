@@ -265,6 +265,10 @@ public abstract class SkittleBotHardware extends OpMode {
         }
     }
 
+    void stopAllDriveMotors() {
+        setDrivePower(0, 0, 0, 0);
+    }
+
     public void runUsingEncoders() {
         DcMotor[] motorsWithEncoders = new DcMotor[] { x1MotorDrive, y1MotorDrive };
 
