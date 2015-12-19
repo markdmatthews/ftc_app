@@ -25,6 +25,12 @@ public class SkittleBotManual extends SkittleBotTelemetry
     public void init() {
         super.init();
         runWithoutDriveEncoders();
+
+
+        // set servos to initial positions
+        setClimberDumpServoPosition(.5); // sets servo to stop position
+        setLeftZiplineTriggerServoPosition(.5);
+        setRightZiplineTriggerServoPosition(.5);
     }
 
 
@@ -86,28 +92,28 @@ public class SkittleBotManual extends SkittleBotTelemetry
 
         // The climber dump servo is continuous rotation, 0.5 is stop,
         // 0 is one direction, 1 the other
-        if (gamepad1.dpad_down) {
+        if (gamepad2.dpad_down) {
             setClimberDumpServoPosition(1.0);
-        } else if (gamepad1.dpad_up) {
+        } else if (gamepad2.dpad_up) {
             setClimberDumpServoPosition(0);
         } else {
             setClimberDumpServoPosition(0.5);
         }
 
         if (gamepad2.left_stick_x > 0) {
-            setLeftZiplineTriggerServoPosition(getLeftZiplineTriggerServoPosition() - 0.05);
+            setLeftZiplineTriggerServoPosition(getLeftZiplineTriggerServoPosition() - 0.005);
         }
 
         if (gamepad2.left_stick_x < 0) {
-            setLeftZiplineTriggerServoPosition(getLeftZiplineTriggerServoPosition() + 0.05);
+            setLeftZiplineTriggerServoPosition(getLeftZiplineTriggerServoPosition() + 0.005);
         }
 
         if (gamepad2.right_stick_x > 0) {
-            setRightZiplineTriggerServoPosition(getRightZiplineTriggerServoPosition() - 0.05);
+            setRightZiplineTriggerServoPosition(getRightZiplineTriggerServoPosition() - 0.005);
         }
 
         if (gamepad2.right_stick_x < 0) {
-            setRightZiplineTriggerServoPosition(getRightZiplineTriggerServoPosition() + 0.05);
+            setRightZiplineTriggerServoPosition(getRightZiplineTriggerServoPosition() + 0.005);
         }
 
         //

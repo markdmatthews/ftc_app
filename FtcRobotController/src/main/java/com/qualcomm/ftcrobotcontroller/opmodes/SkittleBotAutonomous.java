@@ -6,9 +6,13 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
     private RobotState currentRobotState;
 
     public SkittleBotAutonomous(boolean blueAlliance) {
-        // FIXME: These values aren't right
-        ColorMatch matchBlue = new ColorMatch().blueMin(0).greenMin(0).redMin(0);
-        ColorMatch matchRed = new ColorMatch().blueMin(0).greenMin(0).redMin(0);
+        ColorMatch matchBlue = new ColorMatch().redMin(0).redMax(0).
+                blueMin(10).blueMax(20).greenMin(2).greenMax(4).alphaMin(0).alphaMax(40);
+        ColorMatch matchRed = new ColorMatch().blueMin(0).blueMax(2).greenMin(0).greenMax(40).
+                redMin(17).redMax(26).alphaMin(8).alphaMax(11);
+
+        double powerWhenDetectingTape = .2;
+        double powerWhenSeeking = .1;
 
         final ColorMatch matchMiddleAndRescue;
 
@@ -16,22 +20,33 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
             matchMiddleAndRescue = matchBlue;
         } else {
             matchMiddleAndRescue = matchRed;
+            // X-axis direction is reversed when we are in the red alliance
+            powerWhenDetectingTape = -powerWhenDetectingTape;
+            powerWhenSeeking = -powerWhenSeeking;
         }
 
         RobotState doneState = new DoneState(); // what the robot does when done (i.e nothing)
 
         RobotState startState = new StartState();
-        RobotState driveToMiddleLine = new DriveAlongXAxisUntilColor("Drive to middle", .1, matchMiddleAndRescue);
+        RobotState driveToMiddleLine = new DriveAlongXAxisUntilColor("Drive to middle", powerWhenDetectingTape, matchMiddleAndRescue);
         startState.setNextState(driveToMiddleLine);
-        RobotState driveOffMiddleLine = new DriveAlongYAxisTimed("Drive off middle", .1, 500);
+        // Remember, y-axis driving is *always* positive with our program
+        RobotState driveOffMiddleLine = new DriveAlongYAxisTimed("Drive off middle", Math.abs(powerWhenDetectingTape), 1000);
         driveToMiddleLine.setNextState(driveOffMiddleLine);
-        RobotState driveUntilRescueRepairZone = new DriveAlongYAxisUntilColor("Drive to ResQ", .1, matchMiddleAndRescue);
+        RobotState driveUntilRescueRepairZone = new DriveAlongYAxisUntilColor("Drive to ResQ", Math.abs(powerWhenDetectingTape), matchMiddleAndRescue);
         driveOffMiddleLine.setNextState(driveUntilRescueRepairZone);
-        RobotState driveIntoRescueRepairABit = new DriveAlongYAxisTimed("Drive into ResQ", .05, 250);
+        RobotState driveIntoRescueRepairABit = new DriveAlongYAxisTimed("Drive into ResQ", .1, 250);
         driveUntilRescueRepairZone.setNextState(driveIntoRescueRepairABit);
-        RobotState seekWhiteLine = new SeekWhiteLine("Find White Line");
+        RobotState seekWhiteLine = new SeekWhiteLine("Find White Line", powerWhenSeeking);
         driveIntoRescueRepairABit.setNextState(seekWhiteLine);
-        seekWhiteLine.setNextState(doneState);
+        RobotState alignToBeacon = new DriveAlongXAxisTimed("Aligning to beacon", -0.1, 850);
+        seekWhiteLine.setNextState(alignToBeacon);
+        RobotState driveUntilWallTouch = new DriveAlongYAxisUntilTouchSensorPushed("To wall", 0.1);
+        alignToBeacon.setNextState(driveUntilWallTouch);
+        RobotState dumpClimbers = new DumpClimbers("Dump Climbers");
+        driveUntilWallTouch.setNextState(dumpClimbers);
+        dumpClimbers.setNextState(doneState);
+
         // Robot starts the state machine at the start state
         currentRobotState = startState;
     }
@@ -40,6 +55,12 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
     public void init() {
         super.init();
         runWithoutDriveEncoders();
+        // Set servos to initial required state
+        setLeftZiplineTriggerServoPosition(.5);
+        setRightZiplineTriggerServoPosition(.5);
+        setClimberDumpServoPosition(.5); // sets servo to stop position
+
+        enableColorSensorLed(false); // bug with FTC software, must init() with LED off, on in start
     }
 
     /**
@@ -95,30 +116,12 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
     }
 
     class StartState extends RobotState {
-        int colorSensorLedToggleCount = 0;
-
         StartState() {
             super("Start");
         }
 
         RobotState doStuffAndGetNextState() {
-            // There seems to be some race/flakiness with the LED
-            // on the color sensor, toggling it multiple times
-            // seems to make it work more reliably...
-            if (colorSensorLedToggleCount < 100) {
-                colorSensorLedToggleCount++;
-                if (colorSensorLedToggleCount % 2 == 0) {
-                    sensorRGB.enableLed(false);
-                    return this;
-                } else {
-                    sensorRGB.enableLed(true);
-                    return this;
-                }
-            } else if (colorSensorLedToggleCount < 125) {
-                colorSensorLedToggleCount++;
-                sensorRGB.enableLed(true);
-                return this;
-            }
+            enableColorSensorLed(true);
 
             return nextState;
         }
@@ -333,11 +336,21 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
         long beginTime = 0;
         long reverseDirectionTimeMs = 3000;
         int seekDirectionMultiplier = 1;
+        double powerWhenSeeking;
+        boolean firstSeek = true;
 
-        ColorMatch whiteLine = new ColorMatch().alphaMax(0).alphaMax(5); /* FIXME: Not Right Values */
+        ColorMatch whiteLine = new ColorMatch().blueMin(25).blueMax(40).greenMin(25).greenMax(40).redMin(25).redMax(40).alphaMin(30).alphaMax(45);
 
-        public SeekWhiteLine(String stateName) {
+        /**
+         * Seeks back and forth along the X axis searching for the white line
+         * in the ResQ repair zone.
+         *
+         * @param stateName Name of this state
+         * @param powerWhenSeeking Initial power setting to use when seeking (including direction)
+         */
+        public SeekWhiteLine(String stateName, double powerWhenSeeking) {
             super(stateName);
+            this.powerWhenSeeking = powerWhenSeeking;
         }
 
         @Override
@@ -348,8 +361,12 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
                 long now = System.currentTimeMillis();
                 long elapsedTime = now - beginTime;
 
-                if (elapsedTime >= reverseDirectionTimeMs) {
+                // Seek only a portion as long first cycle, because it's only 1/2 a cycle
+                if (elapsedTime >= (firstSeek ? reverseDirectionTimeMs / 2 : reverseDirectionTimeMs)) {
+                    firstSeek = false;
                     seekDirectionMultiplier = -seekDirectionMultiplier;
+                    beginTime = System.currentTimeMillis();
+                    reverseDirectionTimeMs = reverseDirectionTimeMs + (reverseDirectionTimeMs / 4);
                 }
             }
 
@@ -360,10 +377,109 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
                 return nextState;
             }
 
-            double drivePower = .05 * seekDirectionMultiplier;
+            double drivePower = .1 * seekDirectionMultiplier;
             driveAlongXAxis(drivePower);
 
             return this;
+        }
+    }
+
+    class DriveAlongYAxisUntilTouchSensorPushed extends RobotState {
+        double motorPower;
+
+        public DriveAlongYAxisUntilTouchSensorPushed(String stateName, double motorPower) {
+            super(stateName);
+            this.motorPower = motorPower;
+        }
+
+        @Override
+        RobotState doStuffAndGetNextState() {
+            if (isFrontTouchSensorPressed()) {
+                stopAllDriveMotors();
+                return nextState;
+            }
+
+            driveAlongYAxis(motorPower);
+
+            return this;
+        }
+    }
+
+    class DumpClimbers extends RobotState {
+        private final int ARM_STATE_START = 0;
+        private final int ARM_STATE_RAISING = 1;
+        private final int ARM_STATE_HOLDING = 2;
+        private final int ARM_STATE_LOWERING = 3;
+
+        private int currentArmState = ARM_STATE_START;
+
+        private long raiseBeginTimeMs;
+        private long holdBeginTimeMs;
+        private long lowerBeginTimeMs;
+        private long raiseLowerElapsedTimeMs = 1000;
+
+        public DumpClimbers(String stateName) {
+            super(stateName);
+        }
+
+        @Override
+        RobotState doStuffAndGetNextState() {
+            switch (currentArmState) {
+                case ARM_STATE_START:
+                    raiseBeginTimeMs = System.currentTimeMillis();
+                    setClimberDumpServoPosition(0); // up
+
+                    currentArmState = ARM_STATE_RAISING;
+
+                    return this;
+                case ARM_STATE_RAISING:
+
+                    long now = System.currentTimeMillis();
+                    long elapsedTime = now - raiseBeginTimeMs;
+
+                    if (elapsedTime >= raiseLowerElapsedTimeMs) {
+                        setClimberDumpServoPosition(.5);
+                        holdBeginTimeMs = System.currentTimeMillis();
+
+                        currentArmState = ARM_STATE_HOLDING;
+
+                        return this;
+                    }
+
+                    currentArmState = ARM_STATE_RAISING;
+
+                    return this;
+                case ARM_STATE_HOLDING:
+                    now = System.currentTimeMillis();
+                    elapsedTime = now - holdBeginTimeMs;
+
+                    if (elapsedTime >= 500) {
+                        setClimberDumpServoPosition(1); // down
+                        lowerBeginTimeMs = System.currentTimeMillis();
+                        currentArmState = ARM_STATE_LOWERING;
+
+                        return this;
+                    }
+
+                    currentArmState = ARM_STATE_HOLDING;
+
+                    return this;
+                case ARM_STATE_LOWERING:
+                    now = System.currentTimeMillis();
+                    elapsedTime = now - lowerBeginTimeMs;
+
+                    if (elapsedTime >= raiseLowerElapsedTimeMs) {
+                        setClimberDumpServoPosition(0.5); // stop
+                        return nextState;
+                    }
+
+                    currentArmState = ARM_STATE_LOWERING;
+
+                    return this;
+                default:
+                    // error, try next state?
+                    return nextState;
+            }
         }
     }
 }

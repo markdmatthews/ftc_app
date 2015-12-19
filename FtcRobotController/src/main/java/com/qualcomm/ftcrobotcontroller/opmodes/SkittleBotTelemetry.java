@@ -33,16 +33,17 @@ public abstract class SkittleBotTelemetry extends SkittleBotHardware {
                 );
         ColorSensorValues rgbValues = getColorSensorValues();
         telemetry.addData("04", "Color Sensor: " + rgbValues.toString());
+        telemetry.addData("05", "Lts pos: " + getLeftZiplineTriggerServoPosition() + " Rts pos: " + getRightZiplineTriggerServoPosition());
     }
 
     public void updateGamepadTelemetry() {
         //
         // Send telemetry data concerning gamepads to the driver station.
         //
-        telemetry.addData ("05", "GP1 Left x: " + -gamepad1.left_stick_x);
-        telemetry.addData ("06", "GP1 Left y: " + -gamepad1.left_stick_y);
-        telemetry.addData ("07", "GP1 Right x: " + -gamepad1.right_stick_x);
-        telemetry.addData ("08", "GP1 Right y: " + -gamepad1.right_stick_y);
+        telemetry.addData ("06", "GP1 Left x: " + -gamepad1.left_stick_x);
+        telemetry.addData ("07", "GP1 Left y: " + -gamepad1.left_stick_y);
+        telemetry.addData ("08", "GP1 Right x: " + -gamepad1.right_stick_x);
+        telemetry.addData ("09", "GP1 Right y: " + -gamepad1.right_stick_y);
     }
 
     public void setFirstMessage(String message) {

@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorController;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.Range;
 
 public abstract class SkittleBotHardware extends OpMode {
@@ -19,6 +20,7 @@ public abstract class SkittleBotHardware extends OpMode {
     //     Port 2 - x2MotorDrive
     // Core Device Interface Module (mapped as "dim" AL00VCWV)
     //     Port 5 - mr (color sensor)
+    //     Port 0 - frontTouchSensor
     // Servo Controller 1
     //     Port 1 - climberDumpServo
     //     Port 2 - leftZiplineTriggerServo
@@ -50,11 +52,24 @@ public abstract class SkittleBotHardware extends OpMode {
         try {
             sensorRGB = hardwareMap.colorSensor.get("mr");
 
-        } catch (Exception p_exeception) {
+        } catch (Exception exception) {
             appendWarningMessage("sensorRGB");
-            DbgLog.msg(p_exeception.getLocalizedMessage());
+            DbgLog.msg(exception.getLocalizedMessage());
 
             sensorRGB = null;
+        }
+
+        //
+        // Connect the touch sensor
+        //
+
+        try {
+            frontTouchSensor = hardwareMap.touchSensor.get("frontTouchSensor");
+        } catch (Exception exception) {
+            appendWarningMessage("frontTouchSensor");
+            DbgLog.msg(exception.getLocalizedMessage());
+
+            frontTouchSensor = null;
         }
 
         //
@@ -469,6 +484,14 @@ public abstract class SkittleBotHardware extends OpMode {
         return 0.0D;
     }
 
+    protected boolean isFrontTouchSensorPressed() {
+        if (frontTouchSensor == null) {
+            return false;
+        }
+
+        return frontTouchSensor.isPressed();
+    }
+
     /**
      * Indicate whether a message is a available to the class user.
      */
@@ -494,4 +517,6 @@ public abstract class SkittleBotHardware extends OpMode {
     private Servo leftZiplineTriggerServo;
 
     private Servo rightZiplineTriggerServo;
+
+    private TouchSensor frontTouchSensor;
 }
