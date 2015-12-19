@@ -12,25 +12,28 @@ public class SkittleBotManual extends SkittleBotTelemetry
      *
      * The system calls this member when the class is instantiated.
      */
-    public SkittleBotManual()
+    public SkittleBotManual() {
 
-    {
-        //
-        // Initialize base classes.
-        //
-        // All via self-construction.
+    }
 
-        //
-        // Initialize class members.
-        //
-        // All via self-construction.
+    /**
+     * Places the robot into the initial pre-running state.
+     * Robot must fit within sizing guidelines (18x18)
+     * before this state completes.
+     */
+    @Override
+    public void init() {
+        super.init();
+        runWithoutDriveEncoders();
 
-    } // PushBotManual
 
-    //--------------------------------------------------------------------------
-    //
-    // loop
-    //
+        // set servos to initial positions
+        setClimberDumpServoPosition(.5); // sets servo to stop position
+        setLeftZiplineTriggerServoPosition(.5);
+        setRightZiplineTriggerServoPosition(.5);
+    }
+
+
     /**
      * Implement a state machine that controls the robot during
      * manual-operation.  The state machine uses gamepad input to transition
@@ -57,10 +60,6 @@ public class SkittleBotManual extends SkittleBotTelemetry
         //
         // The setPower methods write the motor power values to the DcMotor
         // class, but the power levels aren't applied until this method ends.
-        //
-
-        //
-        // Manage the drive wheel motors.
         //
 
         float spinControl = -gamepad1.right_stick_x;
@@ -91,8 +90,30 @@ public class SkittleBotManual extends SkittleBotTelemetry
             setDrivePower(xDrivePower, -xDrivePower, yDrivePower, -yDrivePower);
         }
 
-        if (gamepad1.left_trigger > 0) {
-            resetDriveEncoders();
+        // The climber dump servo is continuous rotation, 0.5 is stop,
+        // 0 is one direction, 1 the other
+        if (gamepad2.dpad_down) {
+            setClimberDumpServoPosition(1.0);
+        } else if (gamepad2.dpad_up) {
+            setClimberDumpServoPosition(0);
+        } else {
+            setClimberDumpServoPosition(0.5);
+        }
+
+        if (gamepad2.left_stick_x > 0) {
+            setLeftZiplineTriggerServoPosition(getLeftZiplineTriggerServoPosition() - 0.005);
+        }
+
+        if (gamepad2.left_stick_x < 0) {
+            setLeftZiplineTriggerServoPosition(getLeftZiplineTriggerServoPosition() + 0.005);
+        }
+
+        if (gamepad2.right_stick_x > 0) {
+            setRightZiplineTriggerServoPosition(getRightZiplineTriggerServoPosition() - 0.005);
+        }
+
+        if (gamepad2.right_stick_x < 0) {
+            setRightZiplineTriggerServoPosition(getRightZiplineTriggerServoPosition() + 0.005);
         }
 
         //
@@ -101,6 +122,6 @@ public class SkittleBotManual extends SkittleBotTelemetry
         updateTelemetry(); // Update common telemetry
         updateGamepadTelemetry();
 
-    } // loop
+    }
 
-} // PushBotManual
+}

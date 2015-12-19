@@ -5,6 +5,8 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorController;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.Range;
 
 public abstract class SkittleBotHardware extends OpMode {
@@ -18,6 +20,11 @@ public abstract class SkittleBotHardware extends OpMode {
     //     Port 2 - x2MotorDrive
     // Core Device Interface Module (mapped as "dim" AL00VCWV)
     //     Port 5 - mr (color sensor)
+    //     Port 0 - frontTouchSensor
+    // Servo Controller 1
+    //     Port 1 - climberDumpServo
+    //     Port 2 - leftZiplineTriggerServo
+    //     Port 3 - rightZiplineTriggerServo
 
     /**
      * Perform any actions that are necessary when the OpMode is enabled.
@@ -45,11 +52,24 @@ public abstract class SkittleBotHardware extends OpMode {
         try {
             sensorRGB = hardwareMap.colorSensor.get("mr");
 
-        } catch (Exception p_exeception) {
+        } catch (Exception exception) {
             appendWarningMessage("sensorRGB");
-            DbgLog.msg(p_exeception.getLocalizedMessage());
+            DbgLog.msg(exception.getLocalizedMessage());
 
             sensorRGB = null;
+        }
+
+        //
+        // Connect the touch sensor
+        //
+
+        try {
+            frontTouchSensor = hardwareMap.touchSensor.get("frontTouchSensor");
+        } catch (Exception exception) {
+            appendWarningMessage("frontTouchSensor");
+            DbgLog.msg(exception.getLocalizedMessage());
+
+            frontTouchSensor = null;
         }
 
         //
@@ -90,6 +110,33 @@ public abstract class SkittleBotHardware extends OpMode {
             DbgLog.msg(p_exeception.getLocalizedMessage());
 
             x2MotorDrive = null;
+        }
+
+        try {
+            climberDumpServo = hardwareMap.servo.get ("climberDumpServo");
+        } catch (Exception exception) {
+            appendWarningMessage("climberDumpServo");
+            DbgLog.msg (exception.getLocalizedMessage ());
+
+            climberDumpServo = null;
+        }
+
+        try {
+            leftZiplineTriggerServo = hardwareMap.servo.get ("leftZiplineTriggerServo");
+        } catch (Exception exception) {
+            appendWarningMessage("leftZiplineTriggerServo");
+            DbgLog.msg (exception.getLocalizedMessage ());
+
+            leftZiplineTriggerServo = null;
+        }
+
+        try {
+            rightZiplineTriggerServo = hardwareMap.servo.get ("rightZiplineTriggerServo");
+        } catch (Exception exception) {
+            appendWarningMessage("rightZiplineTriggerServo");
+            DbgLog.msg (exception.getLocalizedMessage ());
+
+            rightZiplineTriggerServo = null;
         }
     }
 
@@ -203,8 +250,16 @@ public abstract class SkittleBotHardware extends OpMode {
         setDrivePower(0, 0, power, -power);
     }
 
+    void driveAlong45YAxis(double power) {
+        // FIXME: 11/20/15 What goes here?
+    }
+
     void driveAlongXAxis(double power) {
         setDrivePower(power, -power, 0, 0);
+    }
+
+    void driveAlong45XAxis(double power) {
+        // FIXME: 11/20/15 What goes here?
     }
 
     void setDrivePower(double x1DrivePower, double x2DrivePower,
@@ -225,11 +280,14 @@ public abstract class SkittleBotHardware extends OpMode {
         }
     }
 
-    public void runUsingEncoders() {
-        DcMotor[] allDriveMotors = new DcMotor[] { x1MotorDrive, x2MotorDrive,
-                y1MotorDrive, y2MotorDrive};
+    void stopAllDriveMotors() {
+        setDrivePower(0, 0, 0, 0);
+    }
 
-        for (DcMotor aMotor : allDriveMotors) {
+    public void runUsingEncoders() {
+        DcMotor[] motorsWithEncoders = new DcMotor[] { x1MotorDrive, y1MotorDrive };
+
+        for (DcMotor aMotor : motorsWithEncoders) {
             if (aMotor != null) {
                 aMotor.setMode
                         (DcMotorController.RunMode.RUN_USING_ENCODERS
@@ -307,161 +365,13 @@ public abstract class SkittleBotHardware extends OpMode {
         return Math.abs(getXAxisEncoderCount()) > count;
     }
 
+    boolean hasYAxisEncoderReset() {
+        return getYAxisEncoderCount() == 0;
+    }
 
-//    //--------------------------------------------------------------------------
-//    //
-//    // drive_using_encoders
-//    //
-//
-//    /**
-//     * Indicate whether the drive motors' encoders have reached a value.
-//     */
-//    boolean drive_using_encoders
-//    (double p_left_power
-//            , double p_right_power
-//            , double p_left_count
-//            , double p_right_count
-//    )
-//
-//    {
-//        //
-//        // Assume the encoders have not reached the limit.
-//        //
-//        boolean l_return = false;
-//
-//        //
-//        // Tell the system that motor encoders will be used.
-//        //
-//        run_using_encoders();
-//
-//        //
-//        // Start the drive wheel motors at full power.
-//        //
-//        setDrivePower(p_left_power, p_right_power);
-//
-//        //
-//        // Have the motor shafts turned the required amount?
-//        //
-//        // If they haven't, then the op-mode remains in this state (i.e this
-//        // block will be executed the next time this method is called).
-//        //
-//        if (have_drive_encoders_reached(p_left_count, p_right_count)) {
-//            //
-//            // Reset the encoders to ensure they are at a known good value.
-//            //
-//            resetDriveEncoders();
-//
-//            //
-//            // Stop the motors.
-//            //
-//            setDrivePower(0.0f, 0.0f);
-//
-//            //
-//            // Transition to the next state when this method is called
-//            // again.
-//            //
-//            l_return = true;
-//        }
-//
-//        //
-//        // Return the status.
-//        //
-//        return l_return;
-//
-//    } // drive_using_encoders
-//
-//    //--------------------------------------------------------------------------
-//    //
-//    // has_left_drive_encoder_reset
-//    //
-//
-//    /**
-//     * Indicate whether the left drive encoder has been completely reset.
-//     */
-//    boolean has_left_drive_encoder_reset() {
-//        //
-//        // Assume failure.
-//        //
-//        boolean l_return = false;
-//
-//        //
-//        // Has the left encoder reached zero?
-//        //
-//        if (a_left_encoder_count() == 0) {
-//            //
-//            // Set the status to a positive indication.
-//            //
-//            l_return = true;
-//        }
-//
-//        //
-//        // Return the status.
-//        //
-//        return l_return;
-//
-//    } // has_left_drive_encoder_reset
-//
-//    //--------------------------------------------------------------------------
-//    //
-//    // has_right_drive_encoder_reset
-//    //
-//
-//    /**
-//     * Indicate whether the left drive encoder has been completely reset.
-//     */
-//    boolean has_right_drive_encoder_reset() {
-//        //
-//        // Assume failure.
-//        //
-//        boolean l_return = false;
-//
-//        //
-//        // Has the right encoder reached zero?
-//        //
-//        if (a_right_encoder_count() == 0) {
-//            //
-//            // Set the status to a positive indication.
-//            //
-//            l_return = true;
-//        }
-//
-//        //
-//        // Return the status.
-//        //
-//        return l_return;
-//
-//    } // has_right_drive_encoder_reset
-//
-//    //--------------------------------------------------------------------------
-//    //
-//    // have_drive_encoders_reset
-//    //
-//
-//    /**
-//     * Indicate whether the encoders have been completely reset.
-//     */
-//    boolean have_drive_encoders_reset() {
-//        //
-//        // Assume failure.
-//        //
-//        boolean l_return = false;
-//
-//        //
-//        // Have the encoders reached zero?
-//        //
-//        if (has_left_drive_encoder_reset() && has_right_drive_encoder_reset()) {
-//            //
-//            // Set the status to a positive indication.
-//            //
-//            l_return = true;
-//        }
-//
-//        //
-//        // Return the status.
-//        //
-//        return l_return;
-//
-//    } // have_drive_encoders_reset
+    boolean hasXAxisEncoderReset() {
+        return getXAxisEncoderCount() == 0;
+    }
 
     private boolean colorSensorLedEnabled = false;
 
@@ -511,6 +421,77 @@ public abstract class SkittleBotHardware extends OpMode {
         }
     }
 
+    protected void setClimberDumpServoPosition(double pos) {
+        // clip to legal values
+        double clippedPos = Range.clip
+                ( pos
+                        , Servo.MIN_POSITION
+                        , Servo.MAX_POSITION
+                );
+
+        if (climberDumpServo != null) {
+           climberDumpServo.setPosition (clippedPos);
+        }
+    }
+
+    protected double getClimberDumpServoPosition() {
+        if (climberDumpServo != null) {
+            return climberDumpServo.getPosition ();
+        }
+
+        return 0.0D;
+    }
+
+    protected void setLeftZiplineTriggerServoPosition(double pos) {
+        // clip to legal values
+        double clippedPos = Range.clip
+                ( pos
+                        , Servo.MIN_POSITION
+                        , Servo.MAX_POSITION
+                );
+
+        if (leftZiplineTriggerServo != null) {
+            leftZiplineTriggerServo.setPosition(clippedPos);
+        }
+    }
+
+    protected double getLeftZiplineTriggerServoPosition() {
+        if (leftZiplineTriggerServo != null) {
+            return leftZiplineTriggerServo.getPosition();
+        }
+
+        return 0.0D;
+    }
+
+    protected void setRightZiplineTriggerServoPosition(double pos) {
+        // clip to legal values
+        double clippedPos = Range.clip
+                ( pos
+                        , Servo.MIN_POSITION
+                        , Servo.MAX_POSITION
+                );
+
+        if (rightZiplineTriggerServo != null) {
+            rightZiplineTriggerServo.setPosition(clippedPos);
+        }
+    }
+
+    protected double getRightZiplineTriggerServoPosition() {
+        if (rightZiplineTriggerServo != null) {
+            return rightZiplineTriggerServo.getPosition();
+        }
+
+        return 0.0D;
+    }
+
+    protected boolean isFrontTouchSensorPressed() {
+        if (frontTouchSensor == null) {
+            return false;
+        }
+
+        return frontTouchSensor.isPressed();
+    }
+
     /**
      * Indicate whether a message is a available to the class user.
      */
@@ -530,4 +511,12 @@ public abstract class SkittleBotHardware extends OpMode {
     private DcMotor x2MotorDrive;
 
     protected ColorSensor sensorRGB;
+
+    private Servo climberDumpServo;
+
+    private Servo leftZiplineTriggerServo;
+
+    private Servo rightZiplineTriggerServo;
+
+    private TouchSensor frontTouchSensor;
 }
