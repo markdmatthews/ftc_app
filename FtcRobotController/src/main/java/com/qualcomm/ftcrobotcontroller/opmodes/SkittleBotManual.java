@@ -7,7 +7,7 @@ package com.qualcomm.ftcrobotcontroller.opmodes;
 public class SkittleBotManual extends SkittleBotTelemetry
 
 {
-    /**
+    /*
      * Construct the class.
      *
      * The system calls this member when the class is instantiated.
@@ -29,8 +29,6 @@ public class SkittleBotManual extends SkittleBotTelemetry
 
         // set servos to initial positions
         setClimberDumpServoPosition(.5); // sets servo to stop position
-        setLeftZiplineTriggerServoPosition(.5);
-        setRightZiplineTriggerServoPosition(.5);
     }
 
 
@@ -75,7 +73,7 @@ public class SkittleBotManual extends SkittleBotTelemetry
             float leftStickY = -gamepad1.left_stick_y;
             float leftStickX = -gamepad1.left_stick_x;
 
-            if (gamepad1.right_trigger > 0) {
+            if (gamepad1.right_trigger < .65) {
                 double fortyFiveDegRad = Math.toRadians(-45.0D);
                 double leftStickXPrime = leftStickX * Math.cos(fortyFiveDegRad) - leftStickY * Math.sin(fortyFiveDegRad);
                 double leftStickYPrime = leftStickX * Math.sin(fortyFiveDegRad) + leftStickY * Math.cos(fortyFiveDegRad);
@@ -98,22 +96,6 @@ public class SkittleBotManual extends SkittleBotTelemetry
             setClimberDumpServoPosition(0);
         } else {
             setClimberDumpServoPosition(0.5);
-        }
-
-        if (gamepad2.left_stick_x > 0) {
-            setLeftZiplineTriggerServoPosition(getLeftZiplineTriggerServoPosition() - 0.005);
-        }
-
-        if (gamepad2.left_stick_x < 0) {
-            setLeftZiplineTriggerServoPosition(getLeftZiplineTriggerServoPosition() + 0.005);
-        }
-
-        if (gamepad2.right_stick_x > 0) {
-            setRightZiplineTriggerServoPosition(getRightZiplineTriggerServoPosition() - 0.005);
-        }
-
-        if (gamepad2.right_stick_x < 0) {
-            setRightZiplineTriggerServoPosition(getRightZiplineTriggerServoPosition() + 0.005);
         }
 
         //

@@ -28,7 +28,7 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
         RobotState doneState = new DoneState(); // what the robot does when done (i.e nothing)
 
         RobotState startState = new StartState();
-        RobotState driveToMiddleLine = new DriveAlongXAxisUntilColor("Drive to middle", powerWhenDetectingTape, matchMiddleAndRescue);
+        RobotState driveToMiddleLine = new DriveAlongXAxisUntilColor("Drive to middle", powerWhenDetectingTape * 0.75, matchMiddleAndRescue);
         startState.setNextState(driveToMiddleLine);
         // Remember, y-axis driving is *always* positive with our program
         RobotState driveOffMiddleLine = new DriveAlongYAxisTimed("Drive off middle", Math.abs(powerWhenDetectingTape), 1000);
@@ -56,8 +56,6 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
         super.init();
         runWithoutDriveEncoders();
         // Set servos to initial required state
-        setLeftZiplineTriggerServoPosition(.5);
-        setRightZiplineTriggerServoPosition(.5);
         setClimberDumpServoPosition(.5); // sets servo to stop position
 
         enableColorSensorLed(false); // bug with FTC software, must init() with LED off, on in start

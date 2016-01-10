@@ -23,8 +23,6 @@ public abstract class SkittleBotHardware extends OpMode {
     //     Port 0 - frontTouchSensor
     // Servo Controller 1
     //     Port 1 - climberDumpServo
-    //     Port 2 - leftZiplineTriggerServo
-    //     Port 3 - rightZiplineTriggerServo
 
     /**
      * Perform any actions that are necessary when the OpMode is enabled.
@@ -119,24 +117,6 @@ public abstract class SkittleBotHardware extends OpMode {
             DbgLog.msg (exception.getLocalizedMessage ());
 
             climberDumpServo = null;
-        }
-
-        try {
-            leftZiplineTriggerServo = hardwareMap.servo.get ("leftZiplineTriggerServo");
-        } catch (Exception exception) {
-            appendWarningMessage("leftZiplineTriggerServo");
-            DbgLog.msg (exception.getLocalizedMessage ());
-
-            leftZiplineTriggerServo = null;
-        }
-
-        try {
-            rightZiplineTriggerServo = hardwareMap.servo.get ("rightZiplineTriggerServo");
-        } catch (Exception exception) {
-            appendWarningMessage("rightZiplineTriggerServo");
-            DbgLog.msg (exception.getLocalizedMessage ());
-
-            rightZiplineTriggerServo = null;
         }
     }
 
@@ -442,48 +422,6 @@ public abstract class SkittleBotHardware extends OpMode {
         return 0.0D;
     }
 
-    protected void setLeftZiplineTriggerServoPosition(double pos) {
-        // clip to legal values
-        double clippedPos = Range.clip
-                ( pos
-                        , Servo.MIN_POSITION
-                        , Servo.MAX_POSITION
-                );
-
-        if (leftZiplineTriggerServo != null) {
-            leftZiplineTriggerServo.setPosition(clippedPos);
-        }
-    }
-
-    protected double getLeftZiplineTriggerServoPosition() {
-        if (leftZiplineTriggerServo != null) {
-            return leftZiplineTriggerServo.getPosition();
-        }
-
-        return 0.0D;
-    }
-
-    protected void setRightZiplineTriggerServoPosition(double pos) {
-        // clip to legal values
-        double clippedPos = Range.clip
-                ( pos
-                        , Servo.MIN_POSITION
-                        , Servo.MAX_POSITION
-                );
-
-        if (rightZiplineTriggerServo != null) {
-            rightZiplineTriggerServo.setPosition(clippedPos);
-        }
-    }
-
-    protected double getRightZiplineTriggerServoPosition() {
-        if (rightZiplineTriggerServo != null) {
-            return rightZiplineTriggerServo.getPosition();
-        }
-
-        return 0.0D;
-    }
-
     protected boolean isFrontTouchSensorPressed() {
         if (frontTouchSensor == null) {
             return false;
@@ -513,10 +451,6 @@ public abstract class SkittleBotHardware extends OpMode {
     protected ColorSensor sensorRGB;
 
     private Servo climberDumpServo;
-
-    private Servo leftZiplineTriggerServo;
-
-    private Servo rightZiplineTriggerServo;
 
     private TouchSensor frontTouchSensor;
 }
