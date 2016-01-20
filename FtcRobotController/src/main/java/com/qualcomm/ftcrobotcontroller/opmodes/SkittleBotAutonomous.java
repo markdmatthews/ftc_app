@@ -5,7 +5,10 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
 {
     private RobotState currentRobotState;
 
-    public SkittleBotAutonomous(boolean blueAlliance) {
+    private boolean useEncoders;
+
+    public SkittleBotAutonomous(boolean blueAlliance, boolean useEncoders) {
+        this.useEncoders = useEncoders;
         ColorMatch matchBlue = new ColorMatch().redMin(0).redMax(0).
                 blueMin(10).blueMax(20).greenMin(2).greenMax(4).alphaMin(0).alphaMax(40);
         ColorMatch matchRed = new ColorMatch().blueMin(0).blueMax(2).greenMin(0).greenMax(40).
@@ -28,10 +31,10 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
         RobotState doneState = new DoneState(); // what the robot does when done (i.e nothing)
 
         RobotState startState = new StartState();
-        RobotState driveToMiddleLine = new DriveAlongXAxisUntilColor("Drive to middle", powerWhenDetectingTape, matchMiddleAndRescue);
+        RobotState driveToMiddleLine = new DriveAlongXAxisUntilColor("Drive to middle", powerWhenDetectingTape * 0.75, matchMiddleAndRescue);
         startState.setNextState(driveToMiddleLine);
         // Remember, y-axis driving is *always* positive with our program
-        RobotState driveOffMiddleLine = new DriveAlongYAxisTimed("Drive off middle", Math.abs(powerWhenDetectingTape), 1000);
+        RobotState driveOffMiddleLine = new DriveAlongYAxisTimed("Drive off middle", Math.abs(powerWhenDetectingTape), 2500);
         driveToMiddleLine.setNextState(driveOffMiddleLine);
         RobotState driveUntilRescueRepairZone = new DriveAlongYAxisUntilColor("Drive to ResQ", Math.abs(powerWhenDetectingTape), matchMiddleAndRescue);
         driveOffMiddleLine.setNextState(driveUntilRescueRepairZone);
@@ -54,10 +57,14 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
     @Override
     public void init() {
         super.init();
-        runWithoutDriveEncoders();
+
+        if (!useEncoders) {
+            runWithoutDriveEncoders();
+        } else {
+            runUsingEncoders();
+        }
+
         // Set servos to initial required state
-        setLeftZiplineTriggerServoPosition(.5);
-        setRightZiplineTriggerServoPosition(.5);
         setClimberDumpServoPosition(.5); // sets servo to stop position
 
         enableColorSensorLed(false); // bug with FTC software, must init() with LED off, on in start
