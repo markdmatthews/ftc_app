@@ -9,15 +9,14 @@ import com.qualcomm.robotcore.util.Range;
 public class SkittleBotTeleop extends SkittleBotTelemetry
 
 {
-    private boolean useEncoders;
+    protected boolean useEncoders = false;
 
     /*
      * Construct the class.
      *
      * The system calls this member when the class is instantiated.
      */
-    public SkittleBotTeleop(boolean useEncoders) {
-        this.useEncoders = useEncoders;
+    public SkittleBotTeleop() {
     }
 
     /**
