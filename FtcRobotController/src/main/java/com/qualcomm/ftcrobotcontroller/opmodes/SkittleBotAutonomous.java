@@ -31,7 +31,7 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
         RobotState driveToMiddleLine = new DriveAlongXAxisUntilColor("Drive to middle", powerWhenDetectingTape * 0.75, matchMiddleAndRescue);
         startState.setNextState(driveToMiddleLine);
         // Remember, y-axis driving is *always* positive with our program
-        RobotState driveOffMiddleLine = new DriveAlongYAxisTimed("Drive off middle", Math.abs(powerWhenDetectingTape), 1000);
+        RobotState driveOffMiddleLine = new DriveAlongYAxisTimed("Drive off middle", Math.abs(powerWhenDetectingTape), 2500);
         driveToMiddleLine.setNextState(driveOffMiddleLine);
         RobotState driveUntilRescueRepairZone = new DriveAlongYAxisUntilColor("Drive to ResQ", Math.abs(powerWhenDetectingTape), matchMiddleAndRescue);
         driveOffMiddleLine.setNextState(driveUntilRescueRepairZone);
