@@ -5,7 +5,10 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
 {
     private RobotState currentRobotState;
 
-    public SkittleBotAutonomous(boolean blueAlliance) {
+    private boolean useEncoders;
+
+    public SkittleBotAutonomous(boolean blueAlliance, boolean useEncoders) {
+        this.useEncoders = useEncoders;
         ColorMatch matchBlue = new ColorMatch().redMin(0).redMax(0).
                 blueMin(10).blueMax(20).greenMin(2).greenMax(4).alphaMin(0).alphaMax(40);
         ColorMatch matchRed = new ColorMatch().blueMin(0).blueMax(2).greenMin(0).greenMax(40).
@@ -54,7 +57,13 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
     @Override
     public void init() {
         super.init();
-        runWithoutDriveEncoders();
+
+        if (!useEncoders) {
+            runWithoutDriveEncoders();
+        } else {
+            runUsingEncoders();
+        }
+
         // Set servos to initial required state
         setClimberDumpServoPosition(.5); // sets servo to stop position
 

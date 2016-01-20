@@ -9,13 +9,15 @@ import com.qualcomm.robotcore.util.Range;
 public class SkittleBotTeleop extends SkittleBotTelemetry
 
 {
+    private boolean useEncoders;
+
     /*
      * Construct the class.
      *
      * The system calls this member when the class is instantiated.
      */
-    public SkittleBotTeleop() {
-
+    public SkittleBotTeleop(boolean useEncoders) {
+        this.useEncoders = useEncoders;
     }
 
     /**
@@ -26,7 +28,12 @@ public class SkittleBotTeleop extends SkittleBotTelemetry
     @Override
     public void init() {
         super.init();
-        runWithoutDriveEncoders();
+
+        if (!useEncoders) {
+            runWithoutDriveEncoders();
+        } else {
+            runUsingEncoders();
+        }
 
 
         // set servos to initial positions
