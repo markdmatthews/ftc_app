@@ -14,15 +14,18 @@ public abstract class SkittleBotHardware extends OpMode {
     // Required hardware map
     // Motor Controller 1 (AL00XQ80)
     //     Port 1 - y1MotorDrive (encoder is in port 1)
-    //     Port 2 - y2MotorDrive
+    //     Port 2 - y2MotorDrive (encoder is in port 2)
     // Motor Controller 2 (AL00XSTZ)
     //     Port 1 - x1MotorDrive (encoder is in port 1)
-    //     Port 2 - x2MotorDrive
+    //     Port 2 - x2MotorDrive (encoder is in port 2)
+    // Motor Controller 3 (AL00UVE0)
+    //     Port 1 - winchDrive
     // Core Device Interface Module (mapped as "dim" AL00VCWV)
     //     Port 5 - mr (color sensor)
     //     Port 0 - frontTouchSensor
     // Servo Controller 1
     //     Port 1 - climberDumpServo
+    //     Port 2 - winchAimServo
 
     /**
      * Perform any actions that are necessary when the OpMode is enabled.
@@ -117,6 +120,24 @@ public abstract class SkittleBotHardware extends OpMode {
             DbgLog.msg (exception.getLocalizedMessage ());
 
             climberDumpServo = null;
+        }
+
+        try {
+            winchDrive = hardwareMap.dcMotor.get("winchDrive");
+        } catch (Exception exception) {
+            appendWarningMessage("winchDrive");
+            DbgLog.msg(exception.getLocalizedMessage());
+
+            winchDrive = null;
+        }
+
+        try {
+            winchAimServo = hardwareMap.servo.get ("winchAimServo");
+        } catch (Exception exception) {
+            appendWarningMessage("winchAimServo");
+            DbgLog.msg (exception.getLocalizedMessage ());
+
+            winchAimServo = null;
         }
     }
 
@@ -401,6 +422,27 @@ public abstract class SkittleBotHardware extends OpMode {
         }
     }
 
+    protected void setWinchAimServoPosition(double pos) {
+        // clip to legal values
+        double clippedPos = Range.clip
+                ( pos
+                        , Servo.MIN_POSITION
+                        , Servo.MAX_POSITION
+                );
+
+        if (winchAimServo != null) {
+            winchAimServo.setPosition (clippedPos);
+        }
+    }
+
+    protected double getWinchAimServoPosition() {
+        if (winchAimServo != null) {
+            return winchAimServo.getPosition ();
+        }
+
+        return 0.0D;
+    }
+
     protected void setClimberDumpServoPosition(double pos) {
         // clip to legal values
         double clippedPos = Range.clip
@@ -430,6 +472,12 @@ public abstract class SkittleBotHardware extends OpMode {
         return frontTouchSensor.isPressed();
     }
 
+    protected void setWinchDrivePower(double power) {
+        if (winchDrive != null) {
+            winchDrive.setPower(power);
+        }
+    }
+
     /**
      * Indicate whether a message is a available to the class user.
      */
@@ -453,4 +501,8 @@ public abstract class SkittleBotHardware extends OpMode {
     private Servo climberDumpServo;
 
     private TouchSensor frontTouchSensor;
+
+    private DcMotor winchDrive;
+
+    private Servo winchAimServo;
 }

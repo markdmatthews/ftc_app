@@ -50,6 +50,31 @@ public class SkittleBotTeleop extends SkittleBotTelemetry
     @Override public void loop ()
 
     {
+
+
+        steeringPriorityDrive();
+
+        // The climber dump servo is continuous rotation, 0.5 is stop,
+        // 0 is one direction, 1 the other
+        if (gamepad2.dpad_down) {
+            setClimberDumpServoPosition(1.0);
+        } else if (gamepad2.dpad_up) {
+            setClimberDumpServoPosition(0);
+        } else {
+            setClimberDumpServoPosition(0.5);
+        }
+
+        handleWinchControls();
+
+        //
+        // Send telemetry data to the driver station.
+        //
+        updateTelemetry(); // Update common telemetry
+        updateGamepadTelemetry();
+
+    }
+
+    private void steeringPriorityDrive() {
         //----------------------------------------------------------------------
         //
         // DC Motors
@@ -65,30 +90,9 @@ public class SkittleBotTeleop extends SkittleBotTelemetry
         // speeds.
         //
         // The setPower methods write the motor power values to the DcMotor
-        // class, but the power levels aren't applied until this method ends.
+        // class, but the power levels aren't applied until the loop() method ends.
         //
 
-        steeringPriorityDrive();
-
-        // The climber dump servo is continuous rotation, 0.5 is stop,
-        // 0 is one direction, 1 the other
-        if (gamepad2.dpad_down) {
-            setClimberDumpServoPosition(1.0);
-        } else if (gamepad2.dpad_up) {
-            setClimberDumpServoPosition(0);
-        } else {
-            setClimberDumpServoPosition(0.5);
-        }
-
-        //
-        // Send telemetry data to the driver station.
-        //
-        updateTelemetry(); // Update common telemetry
-        updateGamepadTelemetry();
-
-    }
-
-    private void steeringPriorityDrive() {
         float spinControl = -gamepad1.right_stick_x;
 
         final float yDrivePower;
@@ -154,6 +158,24 @@ public class SkittleBotTeleop extends SkittleBotTelemetry
         float y2DrivePower = Range.clip(-yDriveOnlyPower + spinPower,-1,1);
 
         setDrivePower(x1DrivePower, x2DrivePower, y1DrivePower, y2DrivePower);
+    }
+
+    private void handleWinchControls() {
+        float winchPower = gamepad2.left_stick_y;
+        float aimValue = gamepad2.right_stick_y;
+
+        setWinchDrivePower(scaleMotorPower(winchPower));
+
+        if (aimValue != 0) {
+            // Remember servo range is 0.0 - 1.0
+            // the loop() method gets called every 30ms or so, which is 30 times/second or so
+            //
+            // The scale factor is then, how quickly do we want to turn the servo from stop-to-stop
+            // in seconds / 30
+
+            double scaledAimValue = aimValue * .06667;
+            setWinchAimServoPosition(getWinchAimServoPosition() + scaledAimValue);
+        }
     }
 
     /**
