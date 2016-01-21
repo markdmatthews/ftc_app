@@ -14,8 +14,8 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
         ColorMatch matchRed = new ColorMatch().blueMin(0).blueMax(2).greenMin(0).greenMax(40).
                 redMin(17).redMax(26).alphaMin(8).alphaMax(11);
 
-        double powerWhenDetectingTape = .2;
-        double powerWhenSeeking = .1;
+        double powerWhenDetectingTape = .3;
+        double powerWhenSeeking = .3;
 
         final ColorMatch matchMiddleAndRescue;
 
@@ -31,7 +31,7 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
         RobotState doneState = new DoneState(); // what the robot does when done (i.e nothing)
 
         RobotState startState = new StartState();
-        RobotState driveToMiddleLine = new DriveAlongXAxisUntilColor("Drive to middle", powerWhenDetectingTape * 0.75, matchMiddleAndRescue);
+        RobotState driveToMiddleLine = new DriveAlongXAxisUntilColor("Drive to middle", powerWhenDetectingTape * 0.57, matchMiddleAndRescue);
         startState.setNextState(driveToMiddleLine);
         // Remember, y-axis driving is *always* positive with our program
         RobotState driveOffMiddleLine = new DriveAlongYAxisTimed("Drive off middle", Math.abs(powerWhenDetectingTape), 2500);
@@ -44,7 +44,7 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
         driveIntoRescueRepairABit.setNextState(seekWhiteLine);
         RobotState alignToBeacon = new DriveAlongXAxisTimed("Aligning to beacon", -0.1, 850);
         seekWhiteLine.setNextState(alignToBeacon);
-        RobotState driveUntilWallTouch = new DriveAlongYAxisUntilTouchSensorPushed("To wall", 0.1);
+        RobotState driveUntilWallTouch = new DriveAlongYAxisUntilTouchSensorPushed("To wall", 0.2);
         alignToBeacon.setNextState(driveUntilWallTouch);
         RobotState dumpClimbers = new DumpClimbers("Dump Climbers");
         driveUntilWallTouch.setNextState(dumpClimbers);
@@ -341,7 +341,7 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
     class SeekWhiteLine extends RobotState {
 
         long beginTime = 0;
-        long reverseDirectionTimeMs = 3000;
+        long reverseDirectionTimeMs = 3200;
         int seekDirectionMultiplier = 1;
         double powerWhenSeeking;
         boolean firstSeek = true;
@@ -369,7 +369,7 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
                 long elapsedTime = now - beginTime;
 
                 // Seek only a portion as long first cycle, because it's only 1/2 a cycle
-                if (elapsedTime >= (firstSeek ? reverseDirectionTimeMs / 2 : reverseDirectionTimeMs)) {
+                if (elapsedTime >= (/* firstSeek ? reverseDirectionTimeMs / 1.7 : */ reverseDirectionTimeMs)) {
                     firstSeek = false;
                     seekDirectionMultiplier = -seekDirectionMultiplier;
                     beginTime = System.currentTimeMillis();
@@ -384,7 +384,7 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
                 return nextState;
             }
 
-            double drivePower = .1 * seekDirectionMultiplier;
+            double drivePower = powerWhenSeeking * seekDirectionMultiplier;
             driveAlongXAxis(drivePower);
 
             return this;
