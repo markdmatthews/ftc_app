@@ -31,6 +31,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 package com.qualcomm.ftcrobotcontroller.opmodes;
 
+import com.hfrobots.ftc.season.firstresq.SkittleBotAutonomousBlue;
+import com.hfrobots.ftc.season.firstresq.SkittleBotAutonomousBlueWithEncoders;
+import com.hfrobots.ftc.season.firstresq.SkittleBotAutonomousRed;
+import com.hfrobots.ftc.season.firstresq.SkittleBotAutonomousRedWithEncoders;
+import com.hfrobots.ftc.season.firstresq.SkittleBotTeleop;
+import com.hfrobots.ftc.season.firstresq.SkittleBotTeleopWithEncoders;
 import com.qualcomm.robotcore.eventloop.opmode.OpModeManager;
 import com.qualcomm.robotcore.eventloop.opmode.OpModeRegister;
 

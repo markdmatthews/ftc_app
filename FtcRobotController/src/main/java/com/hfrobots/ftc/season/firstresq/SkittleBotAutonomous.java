@@ -1,5 +1,36 @@
-package com.qualcomm.ftcrobotcontroller.opmodes;
+/*
+Copyright (c) 2016, HF Robotics (http://hfrobots.com)
+All rights reserved.
 
+Redistribution and use in source and binary forms, with or without modification, are permitted
+provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions
+and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of
+conditions and the following disclaimer in the documentation and/or other materials provided with
+the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+package com.hfrobots.ftc.season.firstresq;
+
+
+import com.hfrobots.ftc.core.sensors.ColorMatch;
+import com.hfrobots.ftc.core.sensors.ColorSensorValues;
+import com.hfrobots.ftc.core.statemachine.ColorSensingState;
+import com.hfrobots.ftc.core.statemachine.DoneState;
+import com.hfrobots.ftc.core.statemachine.RobotState;
+import com.hfrobots.ftc.core.statemachine.DoUntilTime;
 
 abstract class SkittleBotAutonomous extends SkittleBotTelemetry
 {
@@ -85,150 +116,15 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
         updateTelemetry();
     }
 
-    /**
-     * All robot "states" have this code to run
-     */
-    abstract class RobotState {
-        protected RobotState nextState;
-        protected String stateName;
-
-        RobotState(String stateName) {
-            this.stateName = stateName;
-        }
-
-        void setNextState(RobotState nextState) {
-            this.nextState = nextState;
-        }
-
-        /**
-         * Define what this state does, and what the next
-         * state when the state is finished...
-         */
-        abstract RobotState doStuffAndGetNextState();
-
-        @Override
-        public String toString() {
-            return stateName;
-        }
-    }
-
-    class DoneState extends RobotState {
-        DoneState() {
-            super("Done");
-        }
-
-        RobotState doStuffAndGetNextState() {
-            return this;
-        }
-    }
-
     class StartState extends RobotState {
-        StartState() {
+        public StartState() {
             super("Start");
         }
 
-        RobotState doStuffAndGetNextState() {
+        public RobotState doStuffAndGetNextState() {
             enableColorSensorLed(true);
 
             return nextState;
-        }
-    }
-
-    class ColorMatch {
-        private int redMin;
-        private int redMax = Integer.MAX_VALUE;
-        private int greenMin;
-        private int greenMax = Integer.MAX_VALUE;
-        private int blueMin;
-        private int blueMax = Integer.MAX_VALUE;
-        private int alphaMin;
-        private int alphaMax = Integer.MAX_VALUE;
-
-        ColorMatch redMin(int redMin) {
-            this.redMin = redMin;
-
-            return this;
-        }
-
-        ColorMatch redMax(int redMax) {
-            this.redMax = redMax;
-
-            return this;
-        }
-
-        ColorMatch greenMin(int greenMin) {
-            this.greenMin = greenMin;
-
-            return this;
-        }
-
-        ColorMatch greenMax(int greenMax) {
-            this.greenMax = greenMax;
-
-            return this;
-        }
-
-        ColorMatch blueMin(int blueMin) {
-            this.blueMin = blueMin;
-
-            return this;
-        }
-
-        ColorMatch blueMax(int blueMax) {
-            this.blueMax = blueMax;
-
-            return this;
-        }
-
-        ColorMatch alphaMin(int alphaMin) {
-            this.alphaMin = alphaMin;
-
-            return this;
-        }
-
-        ColorMatch alphaMax(int alphaMax) {
-            this.alphaMax = alphaMax;
-
-            return this;
-        }
-
-        boolean colorMatches(ColorSensorValues colorReading) {
-            boolean match = false;
-
-            if ((colorReading.red >= redMin && colorReading.red <= redMax)
-                    && (colorReading.green >= greenMin && colorReading.green <= greenMax)
-                    && (colorReading.blue >= blueMin && colorReading.blue <= blueMax)
-                    && (colorReading.alpha >= alphaMin && colorReading.alpha <= alphaMax)) {
-                match = true;
-            }
-
-            return match;
-        }
-    }
-
-    abstract class ColorSensingState extends RobotState {
-        private final ColorMatch colorMatch;
-        private ColorSensorValues lastColorReading;
-
-        ColorSensingState(String stateName, ColorMatch colorMatch) {
-            super(stateName);
-            this.colorMatch = colorMatch;
-        }
-
-        protected boolean colorMatches() {
-            ColorSensorValues colorReading = getColorSensorValues();
-            lastColorReading = colorReading;
-
-            return colorMatch.colorMatches(colorReading);
-        }
-
-        @Override
-        public String toString() {
-            if (lastColorReading != null) {
-                return stateName + " cr: " + lastColorReading;
-            }
-
-            return stateName;
         }
     }
 
@@ -236,11 +132,11 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
         private final double motorPower;
 
         DriveAlongXAxisUntilColor(String stateName, double motorPower, ColorMatch colorMatch) {
-            super(stateName, colorMatch);
+            super(stateName, sensorRGB, colorMatch);
             this.motorPower = motorPower;
         }
 
-        RobotState doStuffAndGetNextState() {
+        public RobotState doStuffAndGetNextState() {
             if (!colorMatches()) {
                 driveAlongXAxis(motorPower);
 
@@ -256,11 +152,11 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
         private final double motorPower;
 
         DriveAlongYAxisUntilColor(String stateName, double motorPower, ColorMatch colorMatch) {
-            super(stateName, colorMatch);
+            super(stateName, sensorRGB, colorMatch);
             this.motorPower = motorPower;
         }
 
-        RobotState doStuffAndGetNextState() {
+        public RobotState doStuffAndGetNextState() {
             if (!colorMatches()) {
                 driveAlongYAxis(motorPower);
 
@@ -272,45 +168,7 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
         }
     }
 
-    abstract class TimedDrive extends RobotState {
-        private final long stopAfterMs;
-        private long beginTimeMs = 0;
-        private long lastElapsedTime = 0;
-
-        public TimedDrive(String stateName, long stopAfterMs) {
-            super(stateName);
-            this.stopAfterMs = stopAfterMs;
-        }
-
-        RobotState doStuffAndGetNextState() {
-            if (beginTimeMs == 0) {
-                beginTimeMs = System.currentTimeMillis();
-            } else {
-                long now = System.currentTimeMillis();
-                long elapsedTime = now - beginTimeMs;
-                lastElapsedTime = elapsedTime;
-
-                if (elapsedTime >= stopAfterMs) {
-                    stopAllDriveMotors();
-
-                    return nextState;
-                }
-            }
-
-            doTheDriving();
-
-            return this;
-        }
-
-        abstract void doTheDriving();
-
-        @Override
-        public String toString() {
-            return stateName + " for: " + stopAfterMs + ", elapsed: " + lastElapsedTime;
-        }
-    }
-
-    class DriveAlongYAxisTimed extends TimedDrive {
+    class DriveAlongYAxisTimed extends DoUntilTime {
         private double motorPower;
 
         public DriveAlongYAxisTimed(String stateName, double motorPower, long stopAfterMs) {
@@ -319,12 +177,15 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
         }
 
         @Override
-        void doTheDriving() {
+        protected void timeReached() {stopAllDriveMotors();}
+
+        @Override
+        protected void doTheDriving() {
             driveAlongYAxis(motorPower);
         }
     }
 
-    class DriveAlongXAxisTimed extends TimedDrive {
+    class DriveAlongXAxisTimed extends DoUntilTime {
         private double motorPower;
 
         public DriveAlongXAxisTimed(String stateName, double motorPower, long stopAfterMs) {
@@ -333,7 +194,10 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
         }
 
         @Override
-        void doTheDriving() {
+        protected void timeReached() {stopAllDriveMotors();}
+
+        @Override
+        protected void doTheDriving() {
             driveAlongXAxis(motorPower);
         }
     }
@@ -361,7 +225,7 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
         }
 
         @Override
-        RobotState doStuffAndGetNextState() {
+        public RobotState doStuffAndGetNextState() {
             if (beginTime == 0) {
                 beginTime = System.currentTimeMillis();
             } else {
@@ -377,7 +241,7 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
                 }
             }
 
-            ColorSensorValues colorReading = getColorSensorValues();
+            ColorSensorValues colorReading = sensorRGB.getColorSensorValues();
 
             if (whiteLine.colorMatches(colorReading)) {
                 stopAllDriveMotors();
@@ -400,7 +264,7 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
         }
 
         @Override
-        RobotState doStuffAndGetNextState() {
+        public RobotState doStuffAndGetNextState() {
             if (isFrontTouchSensorPressed()) {
                 stopAllDriveMotors();
                 return nextState;
@@ -430,7 +294,7 @@ abstract class SkittleBotAutonomous extends SkittleBotTelemetry
         }
 
         @Override
-        RobotState doStuffAndGetNextState() {
+        public RobotState doStuffAndGetNextState() {
             switch (currentArmState) {
                 case ARM_STATE_START:
                     raiseBeginTimeMs = System.currentTimeMillis();
